@@ -19,11 +19,12 @@ library(dplyr)
 library(skimr)
 library(ggplot2)
 library(scales)
+library(viridis)
 ```
 
 Here is an initial exploration of the mouse data we are working on. 
 
-The data is big, but not so large that we can't use our standard tools on a desktop. I'd suggest using packages from the [tidyverse](https://www.tidyverse.org/) family, in particular `readr`, `dplyr`, `ggplot2`, `skimr`, `scales`.
+The data is big, but not so large that we can't use our standard tools on a desktop. I'd suggest using packages from the [tidyverse](https://www.tidyverse.org/) family, in particular `readr`, `dplyr`, `ggplot2`, `skimr`, `scales`, `viridis`.
 
 ##  Dataset overview
 
@@ -81,7 +82,7 @@ NA_count <- data_raw %>%
 
 # make a plot
 tibble(percent_NA = NA_count) %>% 
-  ggplot(aes(percent_NA)) + geom_histogram()
+  ggplot(aes(percent_NA)) + geom_histogram(bins=50)
 ```  
 
 Let's remove those variables that have all NAs and create a new variable called data:
@@ -124,7 +125,7 @@ ggplot(data, aes(x=weight)) +
 Weights by center:
 ```{r}
 ggplot(data, aes(x=weight)) + 
-  geom_histogram() + 
+  geom_histogram(bins=50) + 
   facet_wrap( ~ production_center, ncol=1)
 ```
 
@@ -135,7 +136,51 @@ ggplot(data, aes(x=weight, fill=sex)) +
   facet_wrap( ~ production_center, ncol=1)
 ```
 
-## Procedure
+## Ages
+
+There seems to be an issue with some very negative values of age:
+```{r}
+range(data$age_in_days, na.rm=TRUE)
+ggplot(data, aes(x=age_in_days)) + 
+  geom_histogram(bins=50)
+```
+
+So for now we'll filter those out:
+
+```{r}
+data <- data %>% filter(age_in_days > 0 & age_in_days < 500)
+```
+
+Overall distribution of ages:
+```{r}
+ggplot(data, aes(x=age_in_days)) + 
+  geom_histogram(bins=50)
+```
+
+Age by center:
+```{r}
+ggplot(data, aes(x=age_in_days)) + 
+  geom_histogram(bins=50) + 
+  facet_wrap( ~ production_center, ncol=1)
+```
+
+Age by center and sex:
+```{r, fig_height=12}
+ggplot(data, aes(x=age_in_days, fill=sex)) + 
+  geom_histogram(bins=50) + 
+  facet_wrap( ~ production_center, ncol=1)
+```
+
+Age vs weight by sex:
+```{r}
+ggplot(data, aes(x=age_in_days, y=weight)) + 
+  geom_hex() + 
+  viridis::scale_fill_viridis() + 
+  coord_fixed() +
+  facet_wrap( ~ sex, ncol=1)
+```
+
+## Procedures
 
 Contributions by `procedure_name`:
 
@@ -154,7 +199,7 @@ table(data$production_center, data$procedure_name)
 ```
 
 
-Next want to visualise the above, but so far the plot is unmanagable (need to improve):
+Note the uneven distribution of procdures by production_center. We can try to visualise the above (need to improve):
 
 ```{r, fig.height=25}
 
@@ -166,4 +211,6 @@ ggplot(x, aes(reorder(production_center, n), n)) +
   geom_col() + coord_flip() +
   facet_wrap( ~ procedure_name, ncol=4)
 ```
+
+
 
