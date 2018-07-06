@@ -1,0 +1,169 @@
+---
+title: "Dataset Summary"
+author: "Daniel Falster & Susie Zajitschek"
+date: "06/07/2018"
+output: 
+  html_document:
+    fig_height: 8
+    fig_width: 10
+    df_print: paged
+    rows.print: 25
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, echo=TRUE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+library(readr)
+library(dplyr)
+library(skimr)
+library(ggplot2)
+library(scales)
+```
+
+Here is an initial exploration of the mouse data we are working on. 
+
+The data is big, but not so large that we can't use our standard tools on a desktop. I'd suggest using packages from the [tidyverse](https://www.tidyverse.org/) family, in particular `readr`, `dplyr`, `ggplot2`, `skimr`, `scales`.
+
+##  Dataset overview
+
+Read in data, specifying variable types:
+
+```{r cars}
+data_raw <- read_csv("data/dr7.0_all_control_data.csv", 
+                  col_types = cols(
+                      .default = col_character(),
+                      project_id = col_character(),
+                      id = col_character(),
+                      parameter_id = col_character(),
+                      age_in_days = col_integer(),
+                      date_of_experiment = col_datetime(format = ""),
+                      weight = col_double(),
+                      phenotyping_center_id = col_character(),
+                      production_center_id = col_character(),
+                      weight_date = col_datetime(format = ""),
+                      date_of_birth = col_datetime(format = ""),
+                      procedure_id = col_character(),
+                      pipeline_id = col_character(),
+                      biological_sample_id = col_character(),
+                      biological_model_id = col_character(),
+                      weight_days_old = col_integer(),
+                      datasource_id = col_character(),
+                      experiment_id = col_character(),
+                      data_point = col_double(),
+                      age_in_weeks = col_integer(),
+                      `_version_` = col_character()
+                      )
+                )
+```
+
+
+Number of rows:
+
+```{r}
+data_raw %>% nrow()
+```
+
+Variables in the dataset:
+
+```{r}
+data_raw %>% names()
+```
+
+Lots of variables are full of NAs
+
+```{r}
+n_records <- data_raw %>% nrow()
+NA_count <- data_raw %>%
+  summarise_all(funs(sum(is.na(.))/n_records*100)) %>% 
+  unlist() %>% sort(decreasing=TRUE)
+(NA_count)
+
+# make a plot
+tibble(percent_NA = NA_count) %>% 
+  ggplot(aes(percent_NA)) + geom_histogram()
+```  
+
+Let's remove those variables that have all NAs and create a new variable called data:
+
+```{r}
+(all_NAs <- names(NA_count)[NA_count == 100])
+data <- data_raw %>% select(-one_of(all_NAs))
+```
+
+Now we `r data %>% names() %>% length()` variables in the dataset:
+
+```{r}
+data %>% names()
+```
+
+Now use `skimr` to take a quick look of all variables:
+
+```{r}
+x <- data %>% skimr::skim()
+x %>% skimr::kable()
+```
+
+Next we'll look at some specific variables of potential importance.
+
+## Production center
+
+Contributions by `production_center`:
+```{r}
+data$production_center %>% table() %>% sort()
+```
+
+## Weights
+
+Overall distribution of weights:
+```{r}
+ggplot(data, aes(x=weight)) + 
+  geom_histogram(bins=50)
+```
+
+Weights by center:
+```{r}
+ggplot(data, aes(x=weight)) + 
+  geom_histogram() + 
+  facet_wrap( ~ production_center, ncol=1)
+```
+
+Weights by center and sex:
+```{r}
+ggplot(data, aes(x=weight, fill=sex)) + 
+  geom_histogram(bins=50) + 
+  facet_wrap( ~ production_center, ncol=1)
+```
+
+## Procedure
+
+Contributions by `procedure_name`:
+
+```{r, fig_height=12}
+data$procedure_name %>% table() %>% sort(decreasing = TRUE)
+
+x <- data %>% group_by(procedure_name) %>% summarise(n=n())
+ggplot(x, aes(reorder(procedure_name, n), n)) +
+  geom_col() + coord_flip()
+```
+
+Procedure name by production center:
+
+```{r}
+table(data$production_center, data$procedure_name)
+```
+
+
+Next want to visualise the above, but so far the plot is unmanagable (need to improve):
+
+```{r, fig.height=25}
+
+x <- data %>% 
+  group_by(production_center, procedure_name) %>% 
+  summarise(n=n())
+
+ggplot(x, aes(reorder(production_center, n), n)) +
+  geom_col() + coord_flip() +
+  facet_wrap( ~ procedure_name, ncol=4)
+```
+

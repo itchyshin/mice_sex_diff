@@ -1,3 +1,5 @@
 # mice_sex_diff
 
 This repo is for analyising a WT mice data for analysing sex difference over 200 traits. Our intial questions are two-fold: 1) how much sex difference in variability mice have over these 200 traits and 2) Do males and females differ in allometry?
+
+To analyse the data, download the raw data file `dr7.0_all_control_data.csv` and save it in a file in this folder called `data`. This folder is not tracked by git, as it is too large. 

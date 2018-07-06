@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 mice_sex_diff.Rproj
+data/
+*.html
