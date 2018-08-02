@@ -4,10 +4,17 @@ author: "Daniel Falster & Susie Zajitschek"
 date: "06/07/2018"
 output: 
   html_document:
-    fig_height: 8
+    fig_height: 6
     fig_width: 10
     df_print: paged
-    rows.print: 25
+    rows.print: 10
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
 editor_options: 
   chunk_output_type: console
 ---
@@ -20,13 +27,15 @@ library(skimr)
 library(ggplot2)
 library(scales)
 library(viridis)
+library(knitr)
+library(kableExtra)
 ```
 
 Here is an initial exploration of the mouse data we are working on. 
 
 The data is big, but not so large that we can't use our standard tools on a desktop. I'd suggest using packages from the [tidyverse](https://www.tidyverse.org/) family, in particular `readr`, `dplyr`, `ggplot2`, `skimr`, `scales`, `viridis`.
 
-##  Dataset overview
+#  Dataset overview
 
 Read in data, specifying variable types:
 
@@ -59,36 +68,29 @@ data_raw <- read_csv("data/dr7.0_all_control_data.csv",
 ```
 
 
-Number of rows:
+Number of rows & columns:
 
 ```{r}
-data_raw %>% nrow()
+data_raw %>% dim()
 ```
 
-Variables in the dataset:
-
-```{r}
-data_raw %>% names()
-```
-
-Lots of variables are full of NAs
+Of the `r data %>% names() %>% length()` variables in the dataset, lots of variables are full of NAs:
 
 ```{r}
 n_records <- data_raw %>% nrow()
 NA_count <- data_raw %>%
   summarise_all(funs(sum(is.na(.))/n_records*100)) %>% 
-  unlist() %>% sort(decreasing=TRUE)
-(NA_count)
+  unlist() %>% sort(decreasing=TRUE) %>%
+  tibble(variable=names(.), percent_NA = .)
 
 # make a plot
-tibble(percent_NA = NA_count) %>% 
-  ggplot(aes(percent_NA)) + geom_histogram(bins=50)
+ggplot(NA_count, aes(percent_NA)) + geom_histogram(bins=50)
 ```  
 
-Let's remove those variables that have all NAs and create a new variable called data:
+Let's remove those variables that have all NAs:
 
 ```{r}
-(all_NAs <- names(NA_count)[NA_count == 100])
+(all_NAs <- NA_count$variable[NA_count$percent_NA == 100])
 data <- data_raw %>% select(-one_of(all_NAs))
 ```
 
@@ -100,21 +102,26 @@ data %>% names()
 
 Now use `skimr` to take a quick look of all variables:
 
-```{r}
+```{r, results='asis'}
 x <- data %>% skimr::skim()
-x %>% skimr::kable()
+pander::pander(x)
 ```
 
 Next we'll look at some specific variables of potential importance.
 
-## Production center
+# Production center
 
 Contributions by `production_center`:
 ```{r}
-data$production_center %>% table() %>% sort()
+x <- data %>% group_by(production_center) %>% summarise(n=n())
+
+ggplot(x, aes(reorder(production_center, n), n)) +
+  geom_col() + coord_flip()
+
+x 
 ```
 
-## Weights
+# Weights
 
 Overall distribution of weights:
 ```{r}
@@ -122,84 +129,70 @@ ggplot(data, aes(x=weight)) +
   geom_histogram(bins=50)
 ```
 
-Weights by center:
-```{r}
-ggplot(data, aes(x=weight)) + 
-  geom_histogram(bins=50) + 
-  facet_wrap( ~ production_center, ncol=1)
-```
-
 Weights by center and sex:
-```{r}
+```{r, fig.height=12}
 ggplot(data, aes(x=weight, fill=sex)) + 
   geom_histogram(bins=50) + 
+  scale_y_log10() +
   facet_wrap( ~ production_center, ncol=1)
 ```
 
-## Ages
+# Ages
 
-There seems to be an issue with some very negative values of age:
+There seems to be an issue with some very negative values of age. The range in the raw data is too wide:
 ```{r}
 range(data$age_in_days, na.rm=TRUE)
 ggplot(data, aes(x=age_in_days)) + 
   geom_histogram(bins=50)
 ```
 
-So for now we'll filter those out:
+So for now we'll filter those out, to give an reasonable distribution of ages:
 
 ```{r}
 data <- data %>% filter(age_in_days > 0 & age_in_days < 500)
-```
 
-Overall distribution of ages:
-```{r}
 ggplot(data, aes(x=age_in_days)) + 
   geom_histogram(bins=50)
 ```
 
-Age by center:
-```{r}
-ggplot(data, aes(x=age_in_days)) + 
-  geom_histogram(bins=50) + 
-  facet_wrap( ~ production_center, ncol=1)
-```
 
 Age by center and sex:
-```{r, fig_height=12}
+```{r, fig.height=12}
 ggplot(data, aes(x=age_in_days, fill=sex)) + 
   geom_histogram(bins=50) + 
+  scale_y_log10() +
   facet_wrap( ~ production_center, ncol=1)
 ```
 
 Age vs weight by sex:
 ```{r}
-ggplot(data, aes(x=age_in_days, y=weight)) + 
+data %>%
+  filter(sex %in% c("male", "female")) %>% 
+  ggplot(aes(x=age_in_days, y=weight)) + 
   geom_hex() + 
   viridis::scale_fill_viridis() + 
   coord_fixed() +
   facet_wrap( ~ sex, ncol=1)
 ```
 
-## Procedures
+# Procedures
 
 Contributions by `procedure_name`:
 
-```{r, fig_height=12}
-data$procedure_name %>% table() %>% sort(decreasing = TRUE)
-
+```{r, fig.height=12}
 x <- data %>% group_by(procedure_name) %>% summarise(n=n())
 ggplot(x, aes(reorder(procedure_name, n), n)) +
   geom_col() + coord_flip()
 ```
 
-Procedure name by production center:
-
-```{r}
-table(data$production_center, data$procedure_name)
+```{r, results='asis'}
+data$procedure_name %>% table() %>% sort(decreasing = TRUE) %>%
+  kable() %>%
+  kable_styling() %>%
+  scroll_box(width = "500px", height = "400px")
 ```
 
-
-Note the uneven distribution of procdures by production_center. We can try to visualise the above (need to improve):
+Note the uneven distribution of procdures by production_center:
 
 ```{r, fig.height=25}
 
@@ -213,4 +206,34 @@ ggplot(x, aes(reorder(production_center, n), n)) +
 ```
 
 
+```{r, results='asis'}
+t(table(data$production_center, data$procedure_name)) %>%
+  kable() %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
+```
+
+
+# Parameters
+
+There are a lot of unique values under the variable `parameter_name`:
+
+```{r}
+data$parameter_name %>% unique() %>% length()
+```
+
+```{r}
+data$parameter_name %>% table() %>% sort(decreasing = TRUE) %>%
+  tibble(variable=names(.), count = .) %>%
+  kable() %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "500px")
+```  
+
+
+# Issues:
+
+
+1.  `procedure_name` are values eding in `(GMC)` different?
+2. Spelling / case differences: e.g. `Body weight` vs `Body Weight`
 
