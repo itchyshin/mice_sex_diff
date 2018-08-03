@@ -1,0 +1,76 @@
+---
+title: "Dataset Summary"
+author: "Daniel Falster"
+date: "06/07/2018"
+output: 
+  html_document:
+    fig_height: 6
+    fig_width: 10
+    df_print: paged
+    rows.print: 10
+    code_folding: hide
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, echo=TRUE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+library(readr)
+library(dplyr)
+```
+
+# Load
+
+```{r cars}
+data_raw <- read_csv("data/dr7.0_all_control_data.csv", 
+                  col_types = cols(
+                      .default = col_character(),
+                      project_id = col_character(),
+                      id = col_character(),
+                      parameter_id = col_character(),
+                      age_in_days = col_integer(),
+                      date_of_experiment = col_datetime(format = ""),
+                      weight = col_double(),
+                      phenotyping_center_id = col_character(),
+                      production_center_id = col_character(),
+                      weight_date = col_datetime(format = ""),
+                      date_of_birth = col_datetime(format = ""),
+                      procedure_id = col_character(),
+                      pipeline_id = col_character(),
+                      biological_sample_id = col_character(),
+                      biological_model_id = col_character(),
+                      weight_days_old = col_integer(),
+                      datasource_id = col_character(),
+                      experiment_id = col_character(),
+                      data_point = col_double(),
+                      age_in_weeks = col_integer(),
+                      `_version_` = col_character()
+                      )
+                )
+```
+
+# Cleaning: 
+
+```{r}
+data <- data_raw %>% 
+  mutate(parameter_name = tolower(parameter_name) ) %>%
+  filter(age_in_days > 0 & age_in_days < 500) %>% 
+  select(production_center, project_name, biological_sample_id, sex, procedure_name, age_in_days, weight, parameter_name, data_point) %>% 
+  arrange(production_center, biological_sample_id, age_in_days)
+```
+
+# Export
+
+Body size only
+
+```{r}
+dir.create("export", F, F)
+data %>% filter(parameter_name == "body weight") %>%
+  saveRDS("export/body_weight.rds")
+```
