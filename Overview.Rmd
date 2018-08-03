@@ -235,7 +235,7 @@ data$parameter_name %>% table() %>% sort(decreasing = TRUE) %>%
 There seem to be multiple records for an individual, which is identified by the varaible `biological_sample_id`. Based on this there ar `r data$biological_sample_id %>% unique() %>% length()` unique individuals. And there are multiple records per individual. For example, here are records for  `biological_sample_id=107609`:
 
 ```{r}
-select(filter(data, biological_sample_id == "107609"), sex, production_center, project_name, biological_sample_id, age_in_days, weight, parameter_name) %>% arrange(age_in_days) %>% data.frame()
+select(filter(data_raw, biological_sample_id == "107609"), sex, production_center, external_sample_id, biological_sample_id, age_in_days, weight, parameter_name) %>% arrange(age_in_days) %>% data.frame()
 ```
 
 

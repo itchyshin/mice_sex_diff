@@ -61,7 +61,7 @@ data_raw <- read_csv("data/dr7.0_all_control_data.csv",
 data <- data_raw %>% 
   mutate(parameter_name = tolower(parameter_name) ) %>%
   filter(age_in_days > 0 & age_in_days < 500) %>% 
-  select(production_center, project_name, biological_sample_id, sex, procedure_name, age_in_days, weight, parameter_name, data_point) %>% 
+  select(production_center, strain_name, experiment_id, external_sample_id, biological_sample_id, sex, procedure_name, age_in_days, weight, parameter_name, data_point) %>% 
   arrange(production_center, biological_sample_id, age_in_days)
 ```
 
@@ -74,3 +74,71 @@ dir.create("export", F, F)
 data %>% filter(parameter_name == "body weight") %>%
   saveRDS("export/body_weight.rds")
 ```
+
+# For variance analysis
+
+- population has > 5 individuals
+
+keep age closet t0 10 
+```{r}
+
+data %>% 
+  filter(
+    age_in_days >= 98, 
+    parameter_name == "body weight") %>%
+  mutate(age_diff=abs(100-age_in_days)) %>%
+  group_by(biological_sample_id) %>%
+  filter(age_diff == min(age_diff)) %>%
+  mutate(population = sprintf("%s-%s-%s", strain_name, production_center, sex) )  -> x
+
+i <- match(unique(x$biological_sample_id), x$biological_sample_id)
+
+data2 <- x[i,] 
+```
+
+Calculate number of reocrds per population
+```{r}
+data2 %>% 
+  group_by(population) %>%
+  summarise(
+    n_records = n_distinct(biological_sample_id)
+  ) -> population_size
+hist(population_size$n_records)
+
+sum(population_size$n_records < 10)
+```
+
+```{r}
+
+
+data %>% 
+  filter(
+    age_in_days >= 100, 
+    parameter_name == "body weight") %>%
+  select(biological_sample_id, external_sample_id) %>%
+  arrange(external_sample_id) %>%
+  data.frame()
+
+
+data %>% 
+  filter(
+    age_in_days >= 100, 
+    parameter_name == "body weight") %>%
+  mutate(age_diff=abs(100-age_in_days)) %>%
+  group_by(biological_sample_id) %>%
+  filter(age_diff == min(age_diff)) -> x
+
+i <- match(unique(x$biological_sample_id), x$biological_sample_id)
+
+x[i,] -> x
+
+# check only one record per individual 
+
+table(x$biological_sample_id) -> z 
+z[z!=1]
+
+
+```
+
+
+
