@@ -23,135 +23,56 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 library(readr)
 library(dplyr)
+library(metafor)
+
+source("R/meta_analysis.R")
+source("R/data_load_clean.R")
+source("R/calc_pop_stats.R")
 ```
 
-# Load
+# Setup 
 
+Load data
 ```{r cars}
-data_raw <- read_csv("data/dr7.0_all_control_data.csv", 
-                  col_types = cols(
-                      .default = col_character(),
-                      project_id = col_character(),
-                      id = col_character(),
-                      parameter_id = col_character(),
-                      age_in_days = col_integer(),
-                      date_of_experiment = col_datetime(format = ""),
-                      weight = col_double(),
-                      phenotyping_center_id = col_character(),
-                      production_center_id = col_character(),
-                      weight_date = col_datetime(format = ""),
-                      date_of_birth = col_datetime(format = ""),
-                      procedure_id = col_character(),
-                      pipeline_id = col_character(),
-                      biological_sample_id = col_character(),
-                      biological_model_id = col_character(),
-                      weight_days_old = col_integer(),
-                      datasource_id = col_character(),
-                      experiment_id = col_character(),
-                      data_point = col_double(),
-                      age_in_weeks = col_integer(),
-                      `_version_` = col_character()
-                      )
-                )
+data_raw <- load_raw("data/dr7.0_all_control_data.csv") 
 ```
 
-# Cleaning: 
-
+Clean data & define population variable
 ```{r}
-data <- data_raw %>% 
-  mutate(parameter_name = tolower(parameter_name) ) %>%
-  filter(age_in_days > 0 & age_in_days < 500) %>% 
-  select(production_center, strain_name, experiment_id, external_sample_id, 
-         biological_sample_id, sex, procedure_name, age_in_days, weight, parameter_name, data_point) %>% 
-  arrange(production_center, biological_sample_id, age_in_days)
+data <- clean_raw_data(data_raw) %>%
+  mutate(population = sprintf("%s-%s", production_center, strain_name))
 ```
 
-Export for body size only
-
+Export copy of data for body size analysis
 ```{r}
 dir.create("export", F, F)
 data %>% filter(parameter_name == "body weight") %>%
   saveRDS("export/body_weight.rds")
 ```
 
-# For variance analysis
-
-- population has > 5 individuals
-
-keep age closet t=100
+Create a copy of data for variance analysis
 
 ```{r}
-
-data %>% 
-  filter(
-    age_in_days >= 98, 
-    parameter_name == "body weight") %>%
-  mutate(age_diff=abs(100-age_in_days)) %>%
-  group_by(biological_sample_id) %>%
-  filter(age_diff == min(age_diff)) %>%
-  mutate(population = sprintf("%s-%s-%s", strain_name, production_center, sex) )  -> x
-
-# still some individuals with multiple records (bc appear under different procedures, so filter to one record)
-i <- match(unique(x$biological_sample_id), x$biological_sample_id)
-data2 <- x[i,] 
+data_par_age <- data_subset_parameter_individual_by_age(data, "body weight", age_min = 98, age_center = 100)
 ```
 
-Calculate number of reocrds per population
+Now calculate statistics by population:
 
 ```{r}
-data2 %>% 
-  group_by(population) %>%
-  summarise(
-    n_records = n_distinct(biological_sample_id)
-  ) -> population_size
-hist(population_size$n_records)
-
-sum(population_size$n_records < 5)
-```
-
-Now calculate statsics by population:
-
-```{r}
-population_stats <- data2 %>% 
-  filter(!is.na(data_point)) %>% 
-  group_by(population, sex, strain_name, production_center) %>% 
-  summarise(
-    trait = parameter_name[1],
-    x_bar = mean(data_point),
-    x_sd = sd(data_point),
-    n_ind = n()
-  ) %>% 
-  ungroup() %>%
-  filter(n_ind > 5) %>% 
-  # Check both sexes present & filter those missing
-  group_by(strain_name, production_center) %>% 
-  mutate(
-    n_sex = n_distinct(sex)
-  ) %>% ungroup() %>%
-  filter(n_sex ==2) %>% 
-  arrange(strain_name, production_center, sex)
+population_stats <- calculate_population_stats(data_par_age)
 ```
 
 Now analyse by population data:
 
+
 Sanity checks
 
 ```{r}
-i <- seq(1, nrow(population_stats), by=2)
-all(population_stats$sex[i] == "female")
-all(population_stats$sex[i+1] == "male")
-all(population_stats$strain_name[i+1] == population_stats$strain_name[i] )
-all(population_stats$production_center[i+1] == population_stats$production_center[i] )
-
-input <- data.frame(
-       n1i = population_stats$n_ind[i], 
-       n2i = population_stats$n_ind[i+1], 
-       x1i = population_stats$x_bar[i], 
-       x2i = population_stats$x_bar[i+1],
-       sd1i = population_stats$x_sd[i], 
-       sd2i = population_stats$x_sd[i+1])
-
-all(input > 0)
+# i <- seq(1, nrow(population_stats), by = 2)
+# all(population_stats$sex[i] == "female")
+# all(population_stats$sex[i + 1] == "male")
+# all(population_stats$strain_name[i + 1] == population_stats$strain_name[i])
+# all(population_stats$production_center[i + 1] == population_stats$production_center[i])
 ```
 Check plot of mean vs variance
 
@@ -160,60 +81,7 @@ plot(population_stats$x_bar, population_stats$x_sd, pch=16, log="xy", col = as.f
 ```
 
 ```{r}
-Calc.lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN){
-	S2 <- log(ESD) - log(EMean) + 1 / (2*(EN - 1)) - (log(CSD) - log(CMean) + 1 / (2*(CN - 1)))
-  return(S2)
-}
-
-Calc.var.lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN, Equal.E.C.Corr=T) {
-	if(Equal.E.C.Corr==T){
-		mvcorr <- cor.test(log(c(CMean, EMean)), log(c(CSD, ESD)))$estimate
-		S2 <- CSD^2 / (CN * (CMean^2)) + 1 / (2 * (CN - 1)) - 2 * mvcorr * sqrt((CSD^2 / (CN * (CMean^2))) * (1 / (2 * (CN - 1)))) + ESD^2 / (EN * (EMean^2)) + 1 / (2 * (EN - 1)) - 2 * mvcorr * sqrt((ESD^2 / (EN * (EMean^2))) * (1 / (2 * (EN - 1))))
-	}
-	else{
-		Cmvcorr <- cor.test(log(CMean), log(CSD))$estimate
-		Emvcorr <- cor.test(log(EMean), (ESD))$estimate
-		S2 <- CSD^2 / (CN * (CMean^2)) + 1 / (2 * (CN - 1)) - 2 * Cmvcorr * sqrt((CSD^2 / (CN * (CMean^2))) * (1 / (2 * (CN - 1)))) + ESD^2 / (EN * (EMean^2)) + 1 / (2 * (EN - 1)) - 2 * Emvcorr * sqrt((ESD^2 / (EN * (EMean^2))) * (1 / (2 * (EN - 1))))		
-	}
-	return(S2)
-}
-
-Calc.lnVR <- function(CSD, CN, ESD, EN){
-	log(ESD) - log(CSD) + 1 / (2*(EN - 1)) - 1 / (2*(CN - 1))
-}
-
-Calc.var.lnVR <- function( CN,  EN) {
-	1 / (2*(EN - 1)) + 1 / (2*(CN - 1))
-}
-
-Calc.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
-	log(EMean) - log(CMean)
-}
-
-Calc.var.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
-	CSD^2/(CN * CMean^2) + ESD^2/(EN * EMean^2)
-}
-```
-
-```{r}
-# library(metafor)
-#measures: CVR, VR
-# escalc(measure="CVR", 
-#       n1i = n1i, n2i = n2i, x1i = x1i, x2i = x2i, sd1i = sd1i, sd2i = sd2i, data = input)
-# not working
-
-results <- population_stats[i,] %>% 
-  select(strain_name, production_center) %>%
-  mutate(
-    effect_size_CVR = Calc.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-    sample_variance_CVR = Calc.var.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-    effect_size_VR = Calc.lnVR(CSD = input$sd1i, CN = input$n1i, ESD = input$sd2i, EN = input$n2i),
-    sample_variance_VR = Calc.var.lnVR(CN = input$n1i, EN = input$n2i),
-    effect_size_RR = Calc.lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-    sample_variance_RR = Calc.var.lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-    err = as.factor(seq_len(n()))
-    )
-
+results <- create_meta_analysis_effect_sizes(population_stats)
 ```
 
 ## Compare CVR
