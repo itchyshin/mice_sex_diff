@@ -67,3 +67,14 @@ p1 / p2
 	sd_female <- as.numeric(sd[sd$sex == "female", "sd"])
 
 # pwr.t2n.test
+
+
+#adding hybrids
+bw$hybrid<-grepl("\\\*",bw$strain_name)
+
+filter(bw,sex!="no_data")%>%
+ggplot(aes(x=age_in_days, y=data_point, col = sex)) + 
+geom_point(alpha = 0.5) + 
+labs(x = "Age (days)", y = "Body weight") +
+facet_grid(~hybrid)+
+theme_bw()-> p1
