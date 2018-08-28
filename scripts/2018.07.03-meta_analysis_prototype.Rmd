@@ -1,14 +1,14 @@
 ---
-title: "Dataset Summary"
-author: "Daniel Falster"
-date: "06/07/2018"
+title: "Protoype for metaanalysis"
+author: "Daniel Falster & Alistair Senior"
+date: "03/07/2018"
 output: 
   html_document:
     fig_height: 6
     fig_width: 10
     df_print: paged
     rows.print: 10
-    code_folding: hide
+    code_folding: show
     theme: yeti
     toc: yes
     toc_depth: 3
@@ -20,7 +20,11 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE, echo=TRUE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, cache=FALSE)
+knitr::opts_knit$set(root.dir =  rprojroot::find_root("README.md"))
+```
+
+```{r}
 library(readr)
 library(dplyr)
 library(metafor)
@@ -32,26 +36,28 @@ source("R/calc_pop_stats.R")
 
 # Setup 
 
-Load data
-```{r cars}
-data_raw <- load_raw("data/dr7.0_all_control_data.csv") 
+
+Load data & clean data
+
+```{r, eval = FALSE}
+# Load raw data - save cleaned dataset as RDS for reuse
+data_raw <- load_raw("data/dr7.0_all_control_data.csv") %>%
+    clean_raw_data()
+dir.create("export", F, F)
+saveRDS(data_raw, "export/data_clean.rds")
 ```
 
-Clean data & define population variable
 ```{r}
-data <- clean_raw_data(data_raw) %>%
+data <- readRDS("export/data_clean.rds")
+```
+
+Define population variable
+```{r}
+data <- data %>%
   mutate(population = sprintf("%s-%s", production_center, strain_name))
 ```
 
-Export copy of data for body size analysis
-```{r}
-dir.create("export", F, F)
-data %>% filter(parameter_name == "body weight") %>%
-  saveRDS("export/body_weight.rds")
-```
-
 Create a copy of data for variance analysis
-
 ```{r}
 data_par_age <- data_subset_parameter_individual_by_age(data, "body weight", age_min = 98, age_center = 100)
 ```

@@ -20,7 +20,10 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE, echo=TRUE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, cache=FALSE)
+root.dir = rprojroot::find_root("README.md")
+knitr::opts_knit$set(root.dir = root.dir)
+
 library(readr)
 library(dplyr)
 library(skimr)
@@ -257,9 +260,29 @@ data_i <- data %>%
 data_i
 ```
 
+# Datasource
+
+more recently, Jeremy states: "I provided you too much data (!) which should not be included.  A quarter to a third of the data is from legacy projects and should be excluded.  As I mentioned, exclude anything without datasource_name = `IMPC`"
+
+By source: 
+```
+data_raw$datasource_name %>% table()
+```
+
+So reducing to IMPC reduces the data by one third.
+
+It also greatly reduces the number of parameters:
+```{r}
+filter(data_raw, datasource_name == 'IMPC') %>% pull(parameter_name) %>% unique() %>% length()
+```
+
+```
+data_raw %>% pull(parameter_name) %>% unique() %>% length()
+```
+
 # Issues:
 
 
 1.  `procedure_name` are values eding in `(GMC)` different?
-2. Spelling / case differences: e.g. `Body weight` vs `Body Weight`
+2.  Spelling / case differences: e.g. `Body weight` vs `Body Weight`
 

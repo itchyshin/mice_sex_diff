@@ -5,3 +5,5 @@
 mice_sex_diff.Rproj
 data/
 *.html
+scripts/*files/
+export

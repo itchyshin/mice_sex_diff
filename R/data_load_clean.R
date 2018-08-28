@@ -32,17 +32,21 @@ load_raw <- function(filename) {
 # Apply some standard cleaning to the data
 clean_raw_data <- function(mydata) {
   mydata %>% 
+    
+    # Fileter to IMPC source (recommened by Jeremey in email to Susi on 20 Aug 2018)
+    filter(datasource_name == 'IMPC') %>%
+    
     # standardise trait names
     mutate(parameter_name = tolower(parameter_name) ) %>%
     
     # remove extreme ages
     filter(age_in_days > 0 & age_in_days < 500) %>% 
 
-    # remove NAs ages
+    # remove NAs 
     filter(!is.na(data_point)) %>%
   
-    # subset to resoanble set of variables
-    select(production_center, strain_name, biological_sample_id, sex, procedure_name, age_in_days, weight, parameter_name, data_point) %>% 
+    # subset to reasonable set of variables
+    select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name,  sex, age_in_days, weight, parameter_name, data_point) %>% 
     arrange(production_center, biological_sample_id, age_in_days)
 }
 
