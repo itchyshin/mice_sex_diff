@@ -46,7 +46,8 @@ clean_raw_data <- function(mydata) {
     filter(!is.na(data_point)) %>%
   
     # subset to reasonable set of variables
-    select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name,  sex, age_in_days, weight, parameter_name, data_point) %>% 
+    # date_of_experiment: Jeremy suggested using as an indicator of batch-level effects
+    select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name, sex, date_of_experiment, age_in_days, weight, parameter_name, data_point) %>% 
     arrange(production_center, biological_sample_id, age_in_days)
 }
 
