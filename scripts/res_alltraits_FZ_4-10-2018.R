@@ -6,9 +6,9 @@ library(readr)
 library(dplyr)
 library(metafor)
 
-#save in a folder called "export"
+#save in working directory
 source("meta_analysis.R")
-source("data_load_clean2.R")
+source("data_load_clean2.R") #slightly different to original version
 source("calc_pop_stats.R")
 
 
