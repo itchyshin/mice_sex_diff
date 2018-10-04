@@ -8,7 +8,7 @@ library(metafor)
 
 #save in working directory
 source("meta_analysis.R")
-source("data_load_clean2.R") #slightly different to original version
+source("data_load_clean2.R") #attention: check version version
 source("calc_pop_stats.R")
 
 
