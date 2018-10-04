@@ -113,4 +113,29 @@ ERROR : Processing terminated since k <= 1.
 
 results.alltraits$parameter_name <- data$parameter_name[match(results.alltraits$id, data$id)]
 
+library(ggplot2)
+forest.mean <- ggplot(data = results.alltraits, aes(x= parameter_name, y= mean, ymin= mean_lower, ymax= mean_upper)) +
+        geom_pointrange() + 
+        geom_hline(yintercept= 0, lty=2) +  
+        coord_flip() +  # flip coordinates (puts labels on y axis)
+        xlab("Trait") + ylab("Mean (95% CI)") +
+        theme_bw()  
+forest.mean
+
+forest.cv <- ggplot(data = results.alltraits, aes(x= parameter_name, y= CV, ymin= CV_lower, ymax= CV_upper)) +
+        geom_pointrange() + 
+        geom_hline(yintercept= 0, lty=2) +  
+        coord_flip() +  # flip coordinates (puts labels on y axis)
+        xlab("Trait") + ylab("lnCV (95% CI)") +
+        theme_bw()  
+forest.cv
+
+forest.cvr <- ggplot(data = results.alltraits, aes(x= parameter_name, y= CVR, ymin= CVR_lower, ymax= CVR_upper)) +
+        geom_pointrange() + 
+        geom_hline(yintercept= 0, lty=2) +  
+        coord_flip() +  # flip coordinates (puts labels on y axis)
+        xlab("Trait") + ylab("lnCVR (95% CI)") +
+        theme_bw()  
+forest.cvr
+
 write.csv(results.alltraits, file = "results_alltraits_4-10-2018.csv")
