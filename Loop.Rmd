@@ -15,19 +15,24 @@ getwd()
 ```
 
 ```{r}
-library(readr)
-library(dplyr)
-library(metafor)
-library(devtools)
-library(patchwork)
+# library(readr)
+# library(dplyr)
+# library(metafor)
+# library(devtools)
+# library(patchwork)
+
+# loading packages - need pacman loaded
+pacman::p_load(readr, dplyr, metafor, devtools)
+devtools::install_github("thomasp85/patchwork")
+
 ```
 
 #save in a folder called "export"
 
 ```{r}
-source("D:/Susi/garvan/Github/mice_sex_diff/mice_sex_diff_Nov/R/meta_analysis.R")
-source("D:/Susi/garvan/Github/mice_sex_diff/mice_sex_diff_Nov/R/data_load_clean2.R")
-source("D:/Susi/garvan/Github/mice_sex_diff/mice_sex_diff_Nov/R/calc_pop_stats.R")
+source("./R/meta_analysis.R")
+source("./R/data_load_clean.R") # we need to replcae it with data_load_clean2.R
+source("./R/calc_pop_stats.R")
 ```
 
 # Prepare data 
