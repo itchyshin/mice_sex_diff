@@ -174,17 +174,17 @@ create_meta_analysis_effect_sizes <- function(mydata) {
  
  5) Meta Analysis
  
- Function to calculate metanalaysis statistics. Created by A M Senior @ the University of Otago NZ 03/01/2014
+ Function to calculate meta-analysis statistics. Created by A M Senior @ the University of Otago NZ 03/01/2014
 
-Below are funcitons for calculating effect sizes for meta-analysis of variance. 
+Below are functions for calculating effect sizes for meta-analysis of variance. 
 All functions take the mean, sd and n from the control and experimental groups.
 
-The first function, Cal.lnCVR, calculates the the log repsonse-ratio of the coefficient of variance (lnCVR) - see Nakagawa et al 2015.
+The first function, Cal.lnCVR, calculates the the log response-ratio of the coefficient of variance (lnCVR) - see Nakagawa et al 2015.
 
-The second function calculates the measuremnt error variance for lnCVR. As well as the aforementioned parameters, this function also takes
-Equal.E.C.Corr (default = T), which must be True or False. If true, the funciton assumes that the correlaiton between mean and sd (Taylor's Law) 
+The second function calculates the measurement error variance for lnCVR. As well as the aforementioned parameters, this function also takes
+Equal.E.C.Corr (default = T), which must be True or False. If true, the function assumes that the correlation between mean and sd (Taylor's Law) 
 is equal for the mean and control groups, and, thus these data are pooled. If False the mean-SD correlation for the experimental and control groups
-are calculated seperatley from one another.
+are calculated separately from one another.
 
 Similar functions are then implemented for lnVR (for comparison of standard deviations) and ln RR  (for comparison of means) 
  
@@ -230,7 +230,7 @@ Calc.var.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 Having loaded the necessary functions, we can get started on the dataset.
 
 
-We here provide the cleaned dataset, which we have saved in a folder called "export", as easy starting point. However, the full dataset can ve loaded and cleaned using the da cleaning function (Function 1 above), if "#" signs in the code below are removed  (created as that is much smaller than th e .csv - which we can still provide for those who absoliutely want to start from scratch?)
+We here provide the cleaned dataset, which we have saved in a folder called "export", as easy starting point. However, the full dataset can ve loaded and cleaned using the da cleaning function (Function 1 above), if "#" signs in the code below are removed  (created as that is much smaller than th e .csv - which we can still provide for those who absolutely want to start from scratch?)
 ```{r}
 ## Load raw data - save cleaned dataset as RDS for reuse
 #data_raw <- load_raw("data/dr7.0_all_control_data.csv") %>%
@@ -271,7 +271,7 @@ The grouping variables were decided based on functional groups and procedures
 data3 <- data2 %>%
 mutate(population = sprintf("%s-%s", production_center, strain_name))
 
- group <- read.csv("ParameterGrouping.csv") 
+ group <- read.csv("export/ParameterGrouping.csv") 
  data <- data3
  data$parameterGroup <- group$parameter[match(data$parameter_name, group$parameter_name)] 
  
@@ -279,7 +279,7 @@ mutate(population = sprintf("%s-%s", production_center, strain_name))
 
 ### Assign each unique parameter_name (=trait,use trait variable) a unique number ('id')
 We add a new variable, where redundant traits are combined
-[note however, at this stage the dataset still contains non-sensical traits, i.e. traits that may not contain any u=information on variance]
+[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
 
 ```{r}
 #head(data)
@@ -308,8 +308,8 @@ names(results.alltraits.grouping) <- c("id", "lnCVR", "lnCVR_lower", "lnCVR_uppe
 
 
 ## LOOP, to run meta-analysis on all traits
-The loop combines the functions menationed above and fills the data matrix with results from our meta analysis. 
-Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the metaanalysis, due to absence of variance. Those traits will be removed ion later steps, outlined below.
+The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
+Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed ion later steps, outlined below.
 
 ```{r}
 
@@ -324,9 +324,7 @@ for(t in 1:n) {
     results <- create_meta_analysis_effect_sizes(population_stats)
     
 #lnCVR,  log repsonse-ratio of the coefficient of variance    
-    cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, random = list(~1| strain_name, ~1|production_center,    
-                                                                                        ~1|err), control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000), data = results)
-    results.alltraits.grouping[t, 2] <- cvr$b
+    cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, random = list(~1| strain_name, ~1|production_center, results.alltraits.grouping[t, 2] <- cvr$b
     results.alltraits.grouping[t, 3] <- cvr$ci.lb
     results.alltraits.grouping[t, 4] <- cvr$ci.ub
     results.alltraits.grouping[t, 5] <- cvr$se
@@ -361,11 +359,11 @@ means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = l
 
 ### Merging datasets 
 
-Procedure names, groupiung variables etc are merged back together with the results from the metafor analysis above.
+Procedure names, grouping variables etc. are merged back together with the results from the metafor analysis above.
 This requires loading of another excel sheet, "procedures.csv"
  
 ```{r}
-procedures <- read.csv("procedures.csv")
+procedures <- read.csv("export/procedures.csv")
  
 results.alltraits.grouping$parameter_group <- data$parameter_group[match(results.alltraits.grouping$id, data$id)]
 results.alltraits.grouping$procedure <- data$procedure_name[match(results.alltraits.grouping$id, data$id)]
@@ -377,7 +375,7 @@ meta1 <- results.alltraits.grouping
 n <- length(unique(meta1$parameter_name)) # 232
 ```
 
-Removal of traits that did not achieve convergence, are non-sensical for analysis of variance (such as traits that show variaton, such as number of ribs, digits, etc). 14 traits from the originally 232 that had been included are removed.
+Removal of traits that did not achieve convergence, are nonsensical for analysis of variance (such as traits that show variation, such as number of ribs, digits, etc). 14 traits from the originally 232 that had been included are removed.
 
 ```{r}
 meta_clean <- meta1[ !(meta1$id %in% c(84,144,158,160,161,162,163,165,166,167,168,221,222,231)), ]
@@ -385,9 +383,9 @@ removed <-length(unique(meta_clean$parameter_name)) #218
 ```
 
 
-## Dealing with Correlated Paramters
+## Dealing with Correlated Parameters
 
-This dataset contained a number of highly correlated taits, such as different kinds of cell counts (for example, hierarchichal parametrization within immunologocal assays). As those datapoints are not independent of each other,  we conducted a meta analyses on these correlated parameters to collapse the number of levels.
+This dataset contained a number of highly correlated traits, such as different kinds of cell counts (for example, hierarchical parametrization within immunological assays). As those data-points are not independent of each other,  we conducted a meta analyses on these correlated parameters to collapse the number of levels.
 
 ### Collapsing correlated parameters
 
@@ -404,7 +402,7 @@ length(unique(meta1$parameter_name)) #218
 ```
 
 ### Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
-This serves to idenfify and separate the traits that are correlated from the full dataset that can be preocessed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits accociated with the same  parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
+This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same  parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
 
 ```{r}
 
@@ -431,7 +429,7 @@ meta1_sub$sampleSize <- as.numeric(meta1_sub$sampleSize)
 
 # Preparation for Visualization and Meta-analysis
 
-### Perform meta-analyses on correlated sub-traits, using robumeta 
+### Perform meta-analyses on correlated sub-traits, using `robumeta` 
 The subset of the data is prepared (nested), and in this first step the model of the meta analysis effect sizes are calculated
 
 ```{r}
@@ -540,7 +538,7 @@ kable(cbind (metacombo,metacombo)) %>%
 ```
 
 ### Prepare data
-Nesting, calculating the number of parameters within each grouping term, and running the metaanalysis
+Nesting, calculating the number of parameters within each grouping term, and running the meta-analysis
 ```{r}
 metacombo_final <- metacombo %>%
  group_by(GroupingTerm) %>%
@@ -581,7 +579,7 @@ overall_all1 <- metacombo_final_all %>%
 ```
 
 
-Re-structure data for each grouping term; delete un-used variables
+Re-structure data for each grouping term; delete unused variables
 
 ```{r}
 Behaviour <- as.data.frame(overall1 %>% filter(., GroupingTerm == "Behaviour")    %>%  mutate(lnCVR=.[[4]][[1]]$b, lnCVR_lower=.[[4]][[1]]$ci.lb, lnCVR_upper=.[[4]][[1]]$ci.ub, lnCVR_se=.[[4]][[1]]$se,
@@ -839,7 +837,7 @@ Fig2
 
 ## Preparation, for Figure 3: Overall results of second order meta anlaysis
 ### Restructure data for plotting 
-Data are restructred, and grouping terms are being re-ordered
+Data are restructured, and grouping terms are being re-ordered
 ```{r}
 overall3 <- gather(overall2, parameter, value, c(lnCVR, lnVR, lnRR), factor_key= TRUE)
 
