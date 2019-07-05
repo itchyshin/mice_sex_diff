@@ -8,6 +8,7 @@ output:
     toc: true
     toc_float: true
     toc_depth: 3
+runtime: shiny
 ---
 
 
@@ -42,7 +43,7 @@ library(ggplot2)
 # Loading functions that are necessary
 ### Preparation of raw data
 1) Data loading and cleaning of the csv file
-This step we have already done and provide a the cleaned up file which is less computing intensive. However, cvs
+This step we have already done and provide a cleaned up file which is less computing intensive. However, cvs
 ```{r}
 
 # loads the raw data, setting some default types for various columns
@@ -158,7 +159,7 @@ create_meta_analysis_effect_sizes <- function(mydata) {
   )
   
   mydata[i,] %>% 
-  select(strain_name, production_center) %>%
+  select(strain_name, production_center, trait) %>%
     mutate(
       effect_size_CVR = Calc.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
       sample_variance_CVR = Calc.var.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
@@ -230,7 +231,7 @@ Calc.var.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 Having loaded the necessary functions, we can get started on the dataset.
 
 
-We here provide the cleaned dataset, which we have saved in a folder called "export", as easy starting point. However, the full dataset can ve loaded and cleaned using the da cleaning function (Function 1 above), if "#" signs in the code below are removed  (created as that is much smaller than th e .csv - which we can still provide for those who absolutely want to start from scratch?)
+We here provide the cleaned dataset, which we have saved in a folder called "export", as easy starting point. However, the full dataset can be loaded and cleaned using the data cleaning function (Function 1 above), if "#" signs in the code below are removed  (created as that is much smaller than the .csv - which we can still provide for those who absolutely want to start from scratch?)
 ```{r}
 ## Load raw data - save cleaned dataset as RDS for reuse
 #data_raw <- load_raw("data/dr7.0_all_control_data.csv") %>%
@@ -241,7 +242,6 @@ We here provide the cleaned dataset, which we have saved in a folder called "exp
 data1 <- readRDS("export/data_clean.rds")
 #data1 
 ```
-
 
 ### Clean data
 This requires the selection of traits that have been measured in at least 2 centers. Consequently, rare or unusual methods and procedures are being filtered out in this step.
@@ -264,7 +264,7 @@ data2 <- dat_moreThan1center
 ## Preparation for Meta analysis
 ### Define population variable & add grouping variables
 
-In this step, a grouping variable  is added (found in "Parameter.Grouping.csv")
+In this step, a grouping variable is added (found in "Parameter.Grouping.csv")
 The grouping variables were decided based on functional groups and procedures 
 
 ```{r }
@@ -300,16 +300,14 @@ n <- length(unique(data$id))
 As the current version of this script utilizes a loop instead of tidyR code, it is here necessary to create an empty matrix, in which the returning values will be stored.
 
 ```{r}
-results.alltraits.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n*13), ncol = 13))) #number of individual results per trait = 10
-names(results.alltraits.grouping) <- c("id", "lnCVR", "lnCVR_lower", "lnCVR_upper", "lnCVR_se", "lnVR", "lnVR_lower", "lnVR_upper", "lnVR_se", "lnRR", "lnRR_lower", "lnRR_upper" ,"lnRR_se" , "sampleSize")
-
-
+results.alltraits.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n*14), ncol = 14))) #number of individual results per trait = 10
+names(results.alltraits.grouping) <- c("id", "lnCVR", "lnCVR_lower", "lnCVR_upper", "lnCVR_se", "lnVR", "lnVR_lower", "lnVR_upper", "lnVR_se", "lnRR", "lnRR_lower", "lnRR_upper" ,"lnRR_se" , "sampleSize", "trait")
 ```
 
 
 ## LOOP, to run meta-analysis on all traits
 The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
-Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed ion later steps, outlined below.
+Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
 
 ```{r}
 
@@ -324,7 +322,9 @@ for(t in 1:n) {
     results <- create_meta_analysis_effect_sizes(population_stats)
     
 #lnCVR,  log repsonse-ratio of the coefficient of variance    
-    cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, random = list(~1| strain_name, ~1|production_center, results.alltraits.grouping[t, 2] <- cvr$b
+    cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, random = list(~1| strain_name, ~1|production_center, ~1|err), control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000),  verbose=F, data = results)
+    
+    results.alltraits.grouping[t, 2] <- cvr$b
     results.alltraits.grouping[t, 3] <- cvr$ci.lb
     results.alltraits.grouping[t, 4] <- cvr$ci.ub
     results.alltraits.grouping[t, 5] <- cvr$se
@@ -333,7 +333,8 @@ for(t in 1:n) {
     
     #lnVR, comparison of standard deviations   
     
-cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR, random = list(~1| strain_name, ~1|production_center,                                                             ~1|err), control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000),  verbose=F, data = results)
+cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR, random = list(~1| strain_name, ~1|production_center,~1|err), control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000),  verbose=F, data = results)
+   
     results.alltraits.grouping[t, 6] <- cv$b
     results.alltraits.grouping[t, 7] <- cv$ci.lb
     results.alltraits.grouping[t, 8] <- cv$ci.ub
@@ -341,9 +342,7 @@ cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR, random = list
     
     # for means, lnRR
 
-means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = list(~1| strain_name, ~1|production_center,
-                                                                            ~1|err),
-    control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000), data = results)
+means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = list(~1| strain_name, ~1|production_center, ~1|err), control=list(optimizer="optim", optmethod="Nelder-Mead", maxit= 1000), data = results)
     results.alltraits.grouping[t, 10] <- means$b
     results.alltraits.grouping[t, 11] <- means$ci.lb
     results.alltraits.grouping[t, 12] <- means$ci.ub
@@ -351,10 +350,15 @@ means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = l
      
      
         results.alltraits.grouping[t, 14] <- means$k
+        results.alltraits.grouping[t, 15] <- unique(results$trait)
    
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
  
+# Now that we have a "results" table with each of the meta-analytic means for all effect sizes of interest, we can use this table as part of the Shint App, which will then be able to back calculate the percentage differences between males and females for mean, variance and coefficient of variance. We'll export and use this in the Shiny App. **Note that I have not dealt with convergence issues in some of these models, and so, this will need to be done down the road**
+
+trait_meta_results <- write.csv(results.alltraits.grouping, file = "export/trait_meta_results.csv")
+
 ```
 
 ### Merging datasets 
@@ -2231,9 +2235,3 @@ overall.female.perc. <- full_join(overall.female.perc., plot3.female.meta.RR.per
 for_table_female10perc <- overall.female.perc.[order(factor(overall.female.perc.$GroupingTerm, levels = c("Behaviour","Morphology","Metabolism","Physiology","Immunology","Hematology","Heart","Hearing","Eye", "All"))),]
 
 ```
-
-
-
-
-
-
