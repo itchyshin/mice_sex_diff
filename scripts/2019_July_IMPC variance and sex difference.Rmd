@@ -8,7 +8,9 @@ output:
     toc: true
     toc_float: true
     toc_depth: 3
-runtime: shiny
+  html_notebook: 
+    toc: yes
+#runtime: shiny
 ---
 
 
@@ -238,8 +240,8 @@ We here provide the cleaned dataset, which we have saved in a folder called "exp
 #    clean_raw_data()
 #dir.create("export", F, F)
 #saveRDS(data_raw, "export/data_clean.rds")
-
-data1 <- readRDS("export/data_clean.rds")
+getwd()
+data1 <- readRDS("/export/data_clean.rds") 
 #data1 
 ```
 
@@ -271,7 +273,7 @@ The grouping variables were decided based on functional groups and procedures
 data3 <- data2 %>%
 mutate(population = sprintf("%s-%s", production_center, strain_name))
 
- group <- read.csv("export/ParameterGrouping.csv") 
+ group <- read.csv("/export/ParameterGrouping.csv") 
  data <- data3
  data$parameterGroup <- group$parameter[match(data$parameter_name, group$parameter_name)] 
  
@@ -360,7 +362,7 @@ means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = l
 ## Note Susi 31/7/2019: This dataset contains dublicated values, plus no info on what the "traits" mean. I will change Dan N's to one further belwo, that have been cleaned up already
 #FILE TO USE: METACOMBO (around line 500)
 
-trait_meta_results <- write.csv(results.alltraits.grouping, file = "export/trait_meta_results.csv")
+#trait_meta_results <- write.csv(results.alltraits.grouping, file = "export/trait_meta_results.csv")
 
 ```
 
@@ -370,7 +372,7 @@ Procedure names, grouping variables etc. are merged back together with the resul
 This requires loading of another excel sheet, "procedures.csv"
  
 ```{r}
-procedures <- read.csv("export/procedures.csv")
+procedures <- read.csv("/export/procedures.csv") 
  
 results.alltraits.grouping$parameter_group <- data$parameter_group[match(results.alltraits.grouping$id, data$id)]
 results.alltraits.grouping$procedure <- data$procedure_name[match(results.alltraits.grouping$id, data$id)]
@@ -543,7 +545,7 @@ compare
 #FILE TO USE: METACOMBO 
   ### note: to use
 
-trait_meta_results <- write.csv(metacombo, file = "export/trait_meta_results.csv")
+trait_meta_results <- write.csv(metacombo, file = "/export/trait_meta_results.csv")
 ```
 
 ## Last step: meta-meta-analysis 
@@ -1653,9 +1655,9 @@ Fig3
 ```
 
 
-# * Heterogeneity
-# ** FIGURE 4 (Second-order meta analysis on heterogeneity)
-## *Create matrix to store results for all traits
+# Heterogeneity
+## FIGURE 4 (Second-order meta analysis on heterogeneity)
+### Create matrix to store results for all traits
 ```{r}
 results.allhetero.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n*30), ncol = 30))) 
 names(results.allhetero.grouping) <- c("id", "sigma2_strain.CVR", "sigma2_center.CVR", "sigma2_error.CVR", "s.nlevels.strain.CVR", 
@@ -1666,8 +1668,8 @@ names(results.allhetero.grouping) <- c("id", "sigma2_strain.CVR", "sigma2_center
 
 ```
 
-# **LOOP
-#  parameters to extract from metafor (sigma2's, s.nlevels)
+## LOOP
+parameters to extract from metafor (sigma2's, s.nlevels)
 
 ```{r}
 
@@ -1731,14 +1733,14 @@ for(t in 1:n) {
 
 ```
 
-## *Exclude traits
+### Exclude traits
 ```{r}
 results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
 nrow(results.allhetero.grouping2) #218
 ```
 
 
-# *Merge data sets containing metafor results with procedure etc. names 
+Merge data sets containing metafor results with procedure etc. names 
 ```{r}
 #procedures <- read.csv("procedures.csv")
 
@@ -1752,8 +1754,7 @@ results.allhetero.grouping2$parameter_name <- data$parameter_name[match(results.
 
 
 
-## *Correlated parameters
-
+### Dealing with correlated parameters
 ```{r}
 metahetero1 <- results.allhetero.grouping2 
 length(unique(metahetero1$procedure)) #18
@@ -1761,11 +1762,8 @@ length(unique(metahetero1$GroupingTerm)) #9
 length(unique(metahetero1$parameter_group)) # 149 levels: one more tha in effect size alanlysis, see above; CHECK!
 length(unique(metahetero1$parameter_name)) #218
 
-```
+# Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
 
-# **Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
-
-```{r}
 metahetero1b <-
   metahetero1 %>%
   group_by(parameter_group) %>% 
@@ -1773,27 +1771,21 @@ metahetero1b <-
 
 metahetero1$par_group_size <- metahetero1b$par_group_size[match(metahetero1$parameter_group, metahetero1b$parameter_group)]
 
-```
+#Create subsets with > 1 count (par_group_size > 1) 
 
-# **Create subsets with > 1 count (par_group_size > 1) 
-
-```{r}
 metahetero1_sub <- subset(metahetero1, par_group_size > 1) # 90 observations  
 str(metahetero1_sub)
 # metahetero1_sub$sampleSize <- as.numeric(metahetero1_sub$sampleSize) #from previous analysis? don't think is used: : delete in final version
-```
 
-# **Nest data
-```{r}
+# Nest data
+
 n_count. <- metahetero1_sub %>% 
   group_by(parameter_group) %>% 
   #mutate(raw_N = sum(sampleSize)) %>%  #don't think is necessary: delete in final version
   nest()
 
-```
+# meta-analysis preparation
 
-
-```{r}
 model_count. <- n_count. %>% 
   mutate(model_lnRR = map(data, ~ robu(.x$lnRR ~ 1, data= .x, studynum= .x$id, modelweights = c("CORR"), rho = 0.8, 
                                                 small = TRUE, var.eff.size= (.x$lnRR_se)^2 )),
@@ -1802,10 +1794,9 @@ model_count. <- n_count. %>%
   model_lnCVR = map(data, ~ robu(.x$lnCVR ~ 1, data= .x, studynum= .x$id, modelweights = c("CORR"), rho = 0.8, 
                                                 small = TRUE, var.eff.size= (.x$lnCVR_se)^2 ))) 
 
-```
+
 #Robumeta object details:
 #str(model_count.$model_lnCVR[[1]])
-
 
 ## *Perform meta-analyses on correlated sub-traits, using robumeta
 
@@ -1818,10 +1809,6 @@ model_count. <- n_count. %>%
 count_fun. <- function(mod_sub)
   return(c(as.numeric(mod_sub$mod_info$term1), mod_sub$N) )  
 
-```
-
-
-```{r}
 robusub_RR. <- model_count. %>% 
   transmute(parameter_group, estimatelnRR = map(model_lnRR, count_fun.)) %>% 
   mutate(r = map(estimatelnRR, ~ data.frame(t(.)))) %>%
@@ -1847,8 +1834,8 @@ robu_all. <- full_join(robusub_CVR., robusub_VR.) %>% full_join(., robusub_RR.)
 
 ```
 
-## **Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
-##  In this step, we 	
+### **Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
+  In this step, we 	
 1) put the N from robumeta and the  N from metafor (s.nlevels.error) together into the same columns (N.RR, N.VR, N.CVR)
 
 2) calculate the total variance for metafor models as the sum of random effect variances and the residual error,
@@ -1871,38 +1858,35 @@ metahetero_all <- metahetero_all %>% mutate(var.RR = if_else(var.RR == -Inf, -7 
                    	  var.VR = if_else(var.VR == -Inf, -5 ,var.VR),
 				  var.CVR = if_else(var.CVR == -Inf, -6 ,var.CVR))
 
-```
 
 # **Combine data 
 # Step1 
-```{r}
+
 combinedmetahetero <- bind_rows(robu_all., metahetero_all)
 #glimpse(combinedmetahetero)
-```
+
 # Steps 2&3
-```{r}
+
 metacombohetero <- combinedmetahetero
 metacombohetero$counts <- metahetero1$par_group_size[match( metacombohetero$parameter_group, metahetero1$parameter_group)]
 metacombohetero$procedure2 <-metahetero1$procedure[match( metacombohetero$parameter_group, metahetero1$parameter_group)]
 metacombohetero$GroupingTerm2 <-metahetero1$GroupingTerm[match( metacombohetero$parameter_group, metahetero1$parameter_group)]
 
-```
+
 # **Clean-up and rename 
-```{r}
+
 metacombohetero <- metacombohetero[, c(1:7, 43:45)] 
 names(metacombohetero)[9] <- "procedure" 
 names(metacombohetero)[10] <- "GroupingTerm" 
 
-```
 
-```{r}
 #write.csv(metacombohetero, "metacombohetero.csv")
 
 ```
 
 ## *Last step: meta-meta-analysis of heterogeneity
 ```{r}
-glimpse(metacombohetero)
+#glimpse(metacombohetero)
 
 ## *Perform meta-meta-analysis (3 for each of the 9 grouping terms: var.CVR, var.VR, var.RR) 
 
@@ -1984,9 +1968,9 @@ heterog2 <- bind_rows(Behaviour., Morphology., Metabolism., Physiology., Immunol
 ```
 
 ####################################################################################################################################
-# *PLOTS 
+## Heterogeneity PLOTS
 
-# **Restructure data for plotting 
+Restructure data for plotting 
 ```{r}
 heterog3 <- gather(heterog2, parameter, value, c(heteroCVR, heteroVR, heteroRR), factor_key= TRUE)
 
@@ -2005,9 +1989,9 @@ heterog4$label <- "All traits"
 
 ```
 
-# *Plot FIGURE 4 (Second-order meta analysis on heterogeneity)
+## *Plot FIGURE 4 (Second-order meta analysis on heterogeneity)
 
-# **Plot Fig4 all traits
+Plot Fig4 all traits
 ```{r}
 
 Metameta_Fig4_alltraits <- heterog4 %>%
@@ -2046,4 +2030,3 @@ Metameta_Fig4_alltraits
 #ggsave("Fig4.pdf", plot = Metameta_Fig4_alltraits, width = 7, height = 6) 
 ```
 
-######## 
