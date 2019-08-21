@@ -1,10 +1,13 @@
 
+
 library(shiny)
 
-meta_results <- read.csv("trait_meta_results.csv")
+meta_results <- read.csv("../SexDifference_Shiny/trait_meta_results.csv")
 
 
-ui <- fluidPage(mainPanel(shinythemes::themeSelector()),
+
+
+ui <- fluidPage(mainPanel(shinythemes::themeSelector(default)),
     # Application title
     titlePanel("Trait Specific Percentage Differences in Mean and Variances between the Sexes"),
     

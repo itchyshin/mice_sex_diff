@@ -1,16 +1,18 @@
 ---
 title: "IMPC Mouse data - Variance in sex differences"
 author: "Susanne & Felix Zajitschek"
-date: "July 2019"
+date: "August 2019"
 output:
   html_document:
     code_folding: hide
-    toc: true
-    toc_float: true
-    toc_depth: 3
-  html_notebook: 
     toc: yes
-#runtime: shiny
+    toc_depth: 4
+    toc_float: yes
+  html_notebook:
+    toc: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 
@@ -26,7 +28,8 @@ knitr::opts_chunk$set(echo = TRUE,
 getwd()
 ```
 
-# Packages 
+## Set up
+### Packages 
 
 ```{r}
 library(readr)
@@ -42,8 +45,8 @@ library(ggpubr)
 library(ggplot2)
 ```
 
-# Loading functions that are necessary
-### Preparation of raw data
+### Loading functions that are necessary
+#### Preparation of raw data
 1) Data loading and cleaning of the csv file
 This step we have already done and provide a cleaned up file which is less computing intensive. However, cvs
 ```{r}
@@ -121,7 +124,7 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
 }
 ```
 
-## Functions for preparing the data for meta analyses
+#### Functions for preparing the data for meta analyses
 3) "Population statistics"
 ```{r}
 calculate_population_stats <- function(mydata, min_individuals = 5) {
@@ -241,7 +244,7 @@ We here provide the cleaned dataset, which we have saved in a folder called "exp
 #dir.create("export", F, F)
 #saveRDS(data_raw, "export/data_clean.rds")
 getwd()
-data1 <- readRDS("/export/data_clean.rds") 
+data1 <- readRDS("../export/data_clean.rds") 
 #data1 
 ```
 
@@ -263,8 +266,9 @@ data2 <- dat_moreThan1center
 
 ```
 
-## Preparation for Meta analysis
-### Define population variable & add grouping variables
+## Meta analysis, Phase 1
+### Preparation
+#### Define population variable & add grouping variables
 
 In this step, a grouping variable is added (found in "Parameter.Grouping.csv")
 The grouping variables were decided based on functional groups and procedures 
@@ -273,13 +277,13 @@ The grouping variables were decided based on functional groups and procedures
 data3 <- data2 %>%
 mutate(population = sprintf("%s-%s", production_center, strain_name))
 
- group <- read.csv("/export/ParameterGrouping.csv") 
+ group <- read.csv("../export/ParameterGrouping.csv") 
  data <- data3
  data$parameterGroup <- group$parameter[match(data$parameter_name, group$parameter_name)] 
  
 ```
 
-### Assign each unique parameter_name (=trait,use trait variable) a unique number ('id')
+#### Assign each unique parameter_name (=trait,use trait variable) a unique number ('id')
 We add a new variable, where redundant traits are combined
 [note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
 
@@ -298,7 +302,7 @@ n <- length(unique(data$id))
 ```
 
 
-### Create a matrix to store results for all traits
+#### Create a matrix to store results for all traits
 As the current version of this script utilizes a loop instead of tidyR code, it is here necessary to create an empty matrix, in which the returning values will be stored.
 
 ```{r}
@@ -307,7 +311,7 @@ names(results.alltraits.grouping) <- c("id", "lnCVR", "lnCVR_lower", "lnCVR_uppe
 ```
 
 
-## LOOP, to run meta-analysis on all traits
+### LOOP, to run meta-analysis on all traits
 The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
 Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
 
@@ -372,7 +376,7 @@ Procedure names, grouping variables etc. are merged back together with the resul
 This requires loading of another excel sheet, "procedures.csv"
  
 ```{r}
-procedures <- read.csv("/export/procedures.csv") 
+procedures <- read.csv("../export/procedures.csv") 
  
 results.alltraits.grouping$parameter_group <- data$parameter_group[match(results.alltraits.grouping$id, data$id)]
 results.alltraits.grouping$procedure <- data$procedure_name[match(results.alltraits.grouping$id, data$id)]
@@ -392,11 +396,12 @@ removed <-length(unique(meta_clean$parameter_name)) #218
 ```
 
 
-## Dealing with Correlated Parameters
+## Meta-analysis, Phase 2
+### Dealing with Correlated Parameters, preparation
 
 This dataset contained a number of highly correlated traits, such as different kinds of cell counts (for example, hierarchical parametrization within immunological assays). As those data-points are not independent of each other,  we conducted a meta analyses on these correlated parameters to collapse the number of levels.
 
-### Collapsing correlated parameters
+#### Collapsing and merging correlated parameters
 
 Here we double check numbers of trait parameters in the dataset
 
@@ -410,7 +415,7 @@ length(unique(meta1$parameter_name)) #218
 
 ```
 
-### Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
+#### Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
 This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same  parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
 
 ```{r}
@@ -436,8 +441,6 @@ meta1_sub$sampleSize <- as.numeric(meta1_sub$sampleSize)
 ```
 
 
-# Preparation for Visualization and Meta-analysis
-
 ### Perform meta-analyses on correlated sub-traits, using `robumeta` 
 The subset of the data is prepared (nested), and in this first step the model of the meta analysis effect sizes are calculated
 
@@ -457,7 +460,7 @@ model_count <- n_count %>%
                                                 small = TRUE, var.eff.size= (.x$lnCVR_se)^2 ))) 
 ```
 
-### Extract and save parameter estimates 
+#### Extract and save parameter estimates 
 Function to collect the outcomes of the "mini" meta analysis
 ```{r}
 count_fun <- function(mod_sub)
@@ -521,7 +524,7 @@ kable(cbind (metacombo, metacombo)) %>%
 ```
 
 
-### Clean-up and rename 
+#### Clean-up and rename 
 ```{r}
 metacombo <-metacombo[, c(1, 21:23, 2:13)] 
 names(metacombo)[3] <- "procedure" 
@@ -545,11 +548,11 @@ compare
 #FILE TO USE: METACOMBO 
   ### note: to use
 
-trait_meta_results <- write.csv(metacombo, file = "/export/trait_meta_results.csv")
+#trait_meta_results <- write.csv(metacombo, file = "export/trait_meta_results.csv")
 ```
 
-## Last step: meta-meta-analysis 
-### Perform meta-analyses (3 for each of the 9 grouping terms: lnCVR, lnVR, lnRR) 
+## Meta-analysis, Phase 3
+#### Perform meta-analyses (3 for each of the 9 grouping terms: lnCVR, lnVR, lnRR) 
 This is the full result dataset
 ```{r}
 
@@ -559,7 +562,7 @@ kable(cbind (metacombo,metacombo)) %>%
 
 ```
 
-### Prepare data
+#### Prepare data
 Nesting, calculating the number of parameters within each grouping term, and running the meta-analysis
 ```{r}
 metacombo_final <- metacombo %>%
@@ -653,10 +656,10 @@ overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology,
 ```
 
 
-# PLOTS 
+### Visualisation
 
 
-## Plot FIGURE 2 (First-order meta analysis results)
+#### Plot FIGURE 2 [4 in ms] (First-order meta analysis results)
 
 Re-order grouping terms 
 
@@ -722,7 +725,7 @@ theme_bw(base_size = 18) +
 
 ```
 
-### Prepare data for traits with CI not overlapping 0
+#### Prepare data for traits with CI not overlapping 0
 create column with 1= different from zero, 0= zero included in CI
 ```{r}
 
@@ -847,18 +850,18 @@ theme_bw(base_size = 18) +
 # malebias_Fig2_over10
 
 ```
-### Create final combined Figure (Figure 2)
+#### Create final combined Figure (Figure 2)
 ```{r}
 
-Fig2 <- ggarrange(malebias_Fig2_alltraits, malebias_Fig2_sigtraits,malebias_Fig2_over10, nrow = 3, align = "v", heights = c(1.22,1,1))
+Fig2 <- ggarrange(malebias_Fig2_alltraits, malebias_Fig2_sigtraits,malebias_Fig2_over10, nrow = 3, align = "v", heights = c(1.22,1,1), labels = c("A", "B", "C"))
 Fig2
-#ggsave("Fig2.pdf", plot = Fig2, width = 6, height = 5) 
+ggsave("Fig2.pdf", plot = Fig2, width = 6, height = 5) 
 ```
 
 
 
-## Preparation, for Figure 3: Overall results of second order meta anlaysis
-### Restructure data for plotting 
+###  Overall results of second order meta anlaysis (Figure 4a)
+#### Restructure data for plotting 
 Data are restructured, and grouping terms are being re-ordered
 ```{r}
 overall3 <- gather(overall2, parameter, value, c(lnCVR, lnVR, lnRR), factor_key= TRUE)
@@ -883,7 +886,7 @@ kable(cbind(overall4, overall4)) %>%
 
 
 
-### Plot FIGURE 3 (Second-order meta analysis results)
+#### Plot FIGURE 4 (Second-order meta analysis results)
 
 Preparation: Sub-Plot  for Figure 3: all traits
 ```{r}
@@ -929,7 +932,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 
 ########
 
-### Prepare data for traits with CI not overlapping 0 
+#### Figure 4B:  Prepare data for traits with CI not overlapping 0 
 
 create column with 1= different from zero, 0= zero included in CI
 Male-biased (significant) traits
@@ -1103,7 +1106,7 @@ Metameta_Fig3_male.sig <- overall4.male.sig %>%
 ```
 
 #######################
-### Female Figure
+#### Female Figure, significant traits
 Female Fig3 sig
 
 Prepare data for traits with CI not overlapping 0
@@ -1248,7 +1251,7 @@ overall4.female.sig$label <- "CI not overlapping zero"
 
 ```
 
-### Plot Fig3 all significant results (CI not overlapping zero, female )
+Plot Fig3 all significant results (CI not overlapping zero, female )
 ```{r}
 
 Metameta_Fig3_female.sig <- overall4.female.sig %>%
@@ -1289,13 +1292,13 @@ Metameta_Fig3_female.sig <- overall4.female.sig %>%
 ```
 #######################
 
-### Fig3 >10%
+#### Fig4 C >10%
 
 Prepare data for traits with m/f difference > 10%
 
 create column with 1= larger, 0= diff not larger than 10%
 
-### Male Fig 3 > 10% (male biased traits)
+#### Male Fig 3 > 10% (male biased traits)
 ```{r}
 meta.male.plot3.perc <- metacombo %>% 
     	mutate(percCVR = ifelse(lnCVR > log (11/10), 1, 0),			
@@ -1393,8 +1396,14 @@ plot3.male.meta.VR.perc.b <- plot3.male.meta.VR.perc.b[order(plot3.male.meta.VR.
 plot3.male.meta.RR.perc.b <- as.data.frame(plot3.male.meta.RR.perc %>% group_by(GroupingTerm) %>%  
 	mutate(lnRR = map_dbl(model_lnRR, pluck(2)), lnRR_lower = map_dbl(model_lnRR, pluck(6)), 
 	lnRR_upper =map_dbl(model_lnRR, pluck(7)), lnRR_se =map_dbl(model_lnRR, pluck(3))) )[, c(1,4:7)] 
-add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA))) %>% setNames(names(plot3.male.meta.RR.perc.b))
-plot3.male.meta.RR.perc.b <- rbind(plot3.male.meta.RR.perc.b, add.row.hearing) 
+add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA))) %>% 
+  setNames(names(plot3.male.meta.RR.perc.b))
+plot3.male.meta.RR.perc.b <- rbind(plot3.male.meta.RR.perc.b, add.row.hearing)
+
+add.row.eye <- as.data.frame(t(c("Eye", NA, NA, NA, NA))) %>% 
+  setNames(names(plot3.male.meta.RR.perc.b))
+plot3.male.meta.RR.perc.b <- rbind(plot3.male.meta.RR.perc.b, add.row.eye)
+
 plot3.male.meta.RR.perc.b <- plot3.male.meta.RR.perc.b[order(plot3.male.meta.RR.perc.b$GroupingTerm),] 
 
 overall.male.plot3.perc <- full_join(plot3.male.meta.CVR.perc.b, plot3.male.meta.VR.perc.b) 
@@ -1427,7 +1436,7 @@ overall4.male.perc$ci.high <- as.numeric(overall4.male.perc$ci.high)
 Plot Fig3 all >10% difference (male bias)
 ```{r}
 
-Metameta_Fig3_male.perc <- overall4.male.perc %>% filter(., GroupingTerm != "Hearing") %>%
+Metameta_Fig3_male.perc <- overall4.male.perc %>% #filter(., GroupingTerm != "Hearing") %>%
   ggplot(aes(y= GroupingTerm, x= value)) +
   geom_errorbarh(aes(xmin = ci.low, 
                      xmax = ci.high), 
@@ -1567,6 +1576,11 @@ plot3.meta.RR.perc.b <- as.data.frame(plot3.meta.RR.perc %>% group_by(GroupingTe
 	lnRR_upper =map_dbl(model_lnRR, pluck(7)), lnRR_se =map_dbl(model_lnRR, pluck(3))) )[, c(1,4:7)] 
 add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA))) %>% setNames(names(plot3.meta.RR.perc.b))
 plot3.meta.RR.perc.b <- rbind(plot3.meta.RR.perc.b, add.row.hearing) 
+add.row.hematology <- as.data.frame(t(c("Hematology", NA, NA, NA, NA))) %>% 
+  setNames(names(plot3.meta.RR.perc.b))
+plot3.meta.RR.perc.b <- rbind(plot3.meta.RR.perc.b, add.row.hematology)
+
+
 plot3.meta.RR.perc.b <- plot3.meta.RR.perc.b[order(plot3.meta.RR.perc.b$GroupingTerm),] 
 
 overall.plot3.perc <- full_join(plot3.meta.CVR.perc.b, plot3.meta.VR.perc.b) 
@@ -1578,7 +1592,7 @@ overall.plot3.perc$GroupingTerm <- factor(overall.plot3.perc$GroupingTerm, rev(l
 
 ```
 
-### Restructure data for plotting
+#### Restructure data for plotting
 Female bias, 10 percent difference
 ```{r}
 overall3.perc <- gather(overall.plot3.perc, parameter, value, c(lnCVR, lnVR, lnRR), factor_key= TRUE)
@@ -1643,7 +1657,7 @@ Metameta_Fig3_female.perc <- overall4.perc %>%
 
 
 
-# Plot Fig3 all plots combined
+#### Plot Fig3 all plots combined
 ```{r}
 library(ggpubr)
 Fig3.bottom <- ggarrange(Metameta_Fig3_female.sig, Metameta_Fig3_male.sig, Metameta_Fig3_female.perc, Metameta_Fig3_male.perc, 
@@ -1655,9 +1669,9 @@ Fig3
 ```
 
 
-# Heterogeneity
-## FIGURE 4 (Second-order meta analysis on heterogeneity)
-### Create matrix to store results for all traits
+### Heterogeneity
+#### FIGURE 4 (Second-order meta analysis on heterogeneity)
+#### Create matrix to store results for all traits
 ```{r}
 results.allhetero.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n*30), ncol = 30))) 
 names(results.allhetero.grouping) <- c("id", "sigma2_strain.CVR", "sigma2_center.CVR", "sigma2_error.CVR", "s.nlevels.strain.CVR", 
@@ -1668,13 +1682,12 @@ names(results.allhetero.grouping) <- c("id", "sigma2_strain.CVR", "sigma2_center
 
 ```
 
-## LOOP
-parameters to extract from metafor (sigma2's, s.nlevels)
+#### LOOP
+Parameters to extract from metafor (sigma2's, s.nlevels)
 
 ```{r}
 
 for(t in 1:n) {
-  
   tryCatch({
     
     data_par_age <- data_subset_parameterid_individual_by_age(data, t, age_min = 0, age_center = 100)
@@ -1733,7 +1746,7 @@ for(t in 1:n) {
 
 ```
 
-### Exclude traits
+#### Exclude traits
 ```{r}
 results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
 nrow(results.allhetero.grouping2) #218
@@ -1742,7 +1755,7 @@ nrow(results.allhetero.grouping2) #218
 
 Merge data sets containing metafor results with procedure etc. names 
 ```{r}
-#procedures <- read.csv("procedures.csv")
+#procedures <- read.csv("../procedures.csv")
 
 results.allhetero.grouping2$parameter_group <- data$parameter_group[match(results.allhetero.grouping2$id, data$id)]
 results.allhetero.grouping2$procedure <- data$procedure_name[match(results.allhetero.grouping2$id, data$id)]
@@ -1754,7 +1767,7 @@ results.allhetero.grouping2$parameter_name <- data$parameter_name[match(results.
 
 
 
-### Dealing with correlated parameters
+#### Dealing with correlated parameters
 ```{r}
 metahetero1 <- results.allhetero.grouping2 
 length(unique(metahetero1$procedure)) #18
@@ -1805,7 +1818,7 @@ model_count. <- n_count. %>%
 # sample size: robu_fit$N
 
 ## **Extract and save parameter estimates 
-```{r}
+
 count_fun. <- function(mod_sub)
   return(c(as.numeric(mod_sub$mod_info$term1), mod_sub$N) )  
 
@@ -1831,37 +1844,29 @@ robusub_VR. <- model_count. %>%
   purrr::set_names(c("parameter_group","var.VR","N.VR"))
 
 robu_all. <- full_join(robusub_CVR., robusub_VR.) %>% full_join(., robusub_RR.)
-
 ```
 
-### **Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
-  In this step, we 	
-1) put the N from robumeta and the  N from metafor (s.nlevels.error) together into the same columns (N.RR, N.VR, N.CVR)
-
-2) calculate the total variance for metafor models as the sum of random effect variances and the residual error,
-							then put them in the same columns together with the residual variances from robumeta
+#### Merge the two data sets (the new [robu_all.] and the initial [uncorrelated sub-traits with count = 1])
+In this step, we 	
+1) merge the N from robumeta and the  N from metafor (s.nlevels.error) together into the same columns (N.RR, N.VR, N.CVR)
+2) calculate the total variance for metafor models as the sum of random effect variances and the residual error, then add in the same columns together with the residual variances from robumeta
 ```{r}
 metahetero_all <- metahetero1 %>% filter(par_group_size == 1) %>% as_tibble
 metahetero_all$N.RR <- metahetero_all$s.nlevels.error.RR 
 metahetero_all$N.CVR <- metahetero_all$s.nlevels.error.CVR 
 metahetero_all$N.VR <- metahetero_all$s.nlevels.error.VR 
-
-# log (srt( of the data to look at))
 metahetero_all$var.RR <- log(sqrt(metahetero_all$sigma2_strain.RR + metahetero_all$sigma2_center.RR + metahetero_all$sigma2_error.RR))
 metahetero_all$var.VR <- log(sqrt(metahetero_all$sigma2_strain.VR + metahetero_all$sigma2_center.VR + metahetero_all$sigma2_error.VR))
 metahetero_all$var.CVR <- log(sqrt(metahetero_all$sigma2_strain.CVR + metahetero_all$sigma2_center.CVR + metahetero_all$sigma2_error.CVR))
 #str(metahetero_all)
 #str(robu_all.)
 
-#adjust the -inf to smallest number in dataset
 metahetero_all <- metahetero_all %>% mutate(var.RR = if_else(var.RR == -Inf, -7 ,var.RR),
                    	  var.VR = if_else(var.VR == -Inf, -5 ,var.VR),
 				  var.CVR = if_else(var.CVR == -Inf, -6 ,var.CVR))
 
-
 # **Combine data 
-# Step1 
-
+## Step1 
 combinedmetahetero <- bind_rows(robu_all., metahetero_all)
 #glimpse(combinedmetahetero)
 
@@ -1872,35 +1877,24 @@ metacombohetero$counts <- metahetero1$par_group_size[match( metacombohetero$para
 metacombohetero$procedure2 <-metahetero1$procedure[match( metacombohetero$parameter_group, metahetero1$parameter_group)]
 metacombohetero$GroupingTerm2 <-metahetero1$GroupingTerm[match( metacombohetero$parameter_group, metahetero1$parameter_group)]
 
-
 # **Clean-up and rename 
 
 metacombohetero <- metacombohetero[, c(1:7, 43:45)] 
 names(metacombohetero)[9] <- "procedure" 
 names(metacombohetero)[10] <- "GroupingTerm" 
-
-
-#write.csv(metacombohetero, "metacombohetero.csv")
-
 ```
 
-## *Last step: meta-meta-analysis of heterogeneity
+#### Last step: meta-meta-analysis of heterogeneity
 ```{r}
-#glimpse(metacombohetero)
-
 ## *Perform meta-meta-analysis (3 for each of the 9 grouping terms: var.CVR, var.VR, var.RR) 
 
 metacombohetero_final <- metacombohetero %>%
  group_by(GroupingTerm) %>%
  nest()
 
-# **Calculate number of parameters per grouping term : not needed; delete in final version
-#metacombo_final <- metacombo_final  %>%  mutate(para_per_GroupingTerm = map_dbl(data, nrow))
-
-
 # **Final fixed effects meta-analyses within grouping terms, with SE of the estimate 
-# Shinichi: meta-analyses on heterogeneity, using  sei as below, in metafor formula
 
+metacombohetero$var.CVR
 
 heterog1 <- metacombohetero_final %>% 
 
@@ -1964,12 +1958,9 @@ Eye. <- heterog1 %>% filter(., GroupingTerm == "Eye")  %>% select(., -data)  %>%
 
 heterog2 <- bind_rows(Behaviour., Morphology., Metabolism., Physiology., Immunology., Hematology., Heart., Hearing., Eye.)
 #str(heterog2)
-
 ```
 
-####################################################################################################################################
-## Heterogeneity PLOTS
-
+#### Heterogeneity PLOTS
 Restructure data for plotting 
 ```{r}
 heterog3 <- gather(heterog2, parameter, value, c(heteroCVR, heteroVR, heteroRR), factor_key= TRUE)
@@ -1989,7 +1980,7 @@ heterog4$label <- "All traits"
 
 ```
 
-## *Plot FIGURE 4 (Second-order meta analysis on heterogeneity)
+#### Plot FIGURE 4 (5 in ms) (Second-order meta analysis on heterogeneity)
 
 Plot Fig4 all traits
 ```{r}
