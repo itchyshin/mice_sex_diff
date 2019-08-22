@@ -105,7 +105,7 @@ clean_raw_data <- function(mydata) {
 
 ```
 
-2) Subsetting the data to choose only one datapoint per individual per trait
+2) Subsetting the data to choose only one data point per individual per trait
 ```{r}
 # this is a necessary step for the loop across all traits 
 data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min, age_center) {
@@ -1669,7 +1669,7 @@ Fig3
 ```
 
 
-### Heterogeneity
+## Heterogeneity
 #### FIGURE 4 (Second-order meta analysis on heterogeneity)
 #### Create matrix to store results for all traits
 ```{r}
