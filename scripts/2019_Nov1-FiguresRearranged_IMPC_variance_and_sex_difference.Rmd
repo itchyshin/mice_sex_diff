@@ -50,6 +50,7 @@ library(kableExtra)
 library(robumeta)
 library(ggpubr)
 library(ggplot2)
+
 ```
 
 ### Loading functions 
@@ -466,7 +467,8 @@ The subset of the data is prepared (nested), and in this first step the model of
 n_count <- meta1_sub %>% 
   group_by(parameter_group) %>% 
   mutate(raw_N = sum(sampleSize)) %>%  
-    nest()
+  nest() %>% 
+  ungroup()
 
 model_count <- n_count %>% 
   mutate(model_lnRR = map(data, ~ robu(.x$lnRR ~ 1, data= .x, studynum= .x$id, modelweights = c("CORR"), rho = 0.8, small = TRUE, var.eff.size= (.x$lnRR_se)^2 )),
@@ -505,10 +507,12 @@ robusub_VR <- model_count %>%
   purrr::set_names(c("parameter_group","lnVR","lnVR_lower","lnVR_upper","lnVR_se"))
 
 robu_all <- full_join(robusub_CVR, robusub_VR) %>% full_join(., robusub_RR)
+```
+
+```{r}
 kable(cbind(robu_all, robu_all)) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
-
 ```
 
  Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
