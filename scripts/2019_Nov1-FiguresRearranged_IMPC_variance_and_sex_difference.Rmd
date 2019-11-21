@@ -20,8 +20,12 @@ output:
 subtitle: Electronic Supplementary Material
 ---
 
+# Set-up
 
-```{r setup, include=FALSE}
+## Load packages & functions
+
+
+```{r, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
   warning = FALSE,
@@ -31,10 +35,6 @@ knitr::opts_chunk$set(
 )
 
 ```
-
-
-## Set up
-#### Packages 
 
 ```{r}
 library(readr)
@@ -51,9 +51,10 @@ library(ggplot2)
 library(here)
 ```
 
-### Loading functions 
-#### Functions for preparing the data for meta analyses
+Functions for preparing the data for meta analyses
+
 1) "Population statistics"
+
 ```{r}
 calculate_population_stats <- function(mydata, min_individuals = 5) {
   mydata %>%
@@ -79,6 +80,7 @@ calculate_population_stats <- function(mydata, min_individuals = 5) {
 ```
 
 2) Extraction of effect sizes and sample variances
+
 ```{r}
 create_meta_analysis_effect_sizes <- function(mydata) {
   i <- seq(1, nrow(mydata), by = 2)
@@ -94,41 +96,36 @@ create_meta_analysis_effect_sizes <- function(mydata) {
   mydata[i, ] %>%
     select(strain_name, production_center, trait) %>%
     mutate(
-      effect_size_CVR = Calc.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-      sample_variance_CVR = Calc.var.lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-      effect_size_VR = Calc.lnVR(CSD = input$sd1i, CN = input$n1i, ESD = input$sd2i, EN = input$n2i),
-      sample_variance_VR = Calc.var.lnVR(CN = input$n1i, EN = input$n2i),
-      effect_size_RR = Calc.lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
-      sample_variance_RR = Calc.var.lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
+      effect_size_CVR = calculate_lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
+      sample_variance_CVR = calculate_var_lnCVR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
+      effect_size_VR = calculate_lnVR(CSD = input$sd1i, CN = input$n1i, ESD = input$sd2i, EN = input$n2i),
+      sample_variance_VR = calculate_var_lnVR(CN = input$n1i, EN = input$n2i),
+      effect_size_RR = calculate_lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
+      sample_variance_RR = calculate_var_lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
       err = as.factor(seq_len(n()))
     )
 }
 ```
+
  
-3) Meta Analysis
+3) Calculate meta-analysis statistics
+
+Based on function created by A M Senior @ the University of Otago NZ 03/01/2014: 
+
+* Calculates effect sizes for meta-analysis of variance.  All functions take the mean, sd and n from the control and experimental groups.
+* The first function, calculate_lnCVR, calculates the the log response-ratio of the coefficient of variance (lnCVR) - see Nakagawa et al 2015.
+* The second function calculates the measurement error variance for lnCVR. As well as the aforementioned parameters, this function also takes Equal_E_C_Corr (default = T), which must be True or False. If true, the function assumes that the correlation between mean and sd (Taylor's Law)  is equal for the mean and control groups, and, thus these data are pooled. If False the mean-SD correlation for the experimental and control groups are calculated separately from one another.
+* Similar functions are then implemented for lnVR (for comparison of standard deviations) and ln RR  (for comparison of means) 
  
- Function to calculate meta-analysis statistics. Created by A M Senior @ the University of Otago NZ 03/01/2014
 
-Below are functions for calculating effect sizes for meta-analysis of variance. 
-All functions take the mean, sd and n from the control and experimental groups.
-
-The first function, Cal.lnCVR, calculates the the log response-ratio of the coefficient of variance (lnCVR) - see Nakagawa et al 2015.
-
-The second function calculates the measurement error variance for lnCVR. As well as the aforementioned parameters, this function also takes
-Equal.E.C.Corr (default = T), which must be True or False. If true, the function assumes that the correlation between mean and sd (Taylor's Law) 
-is equal for the mean and control groups, and, thus these data are pooled. If False the mean-SD correlation for the experimental and control groups
-are calculated separately from one another.
-
-Similar functions are then implemented for lnVR (for comparison of standard deviations) and ln RR  (for comparison of means) 
- 
 ```{r}
 
-Calc.lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN) {
+calculate_lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN) {
   log(ESD) - log(EMean) + 1 / (2 * (EN - 1)) - (log(CSD) - log(CMean) + 1 / (2 * (CN - 1)))
 }
 
-Calc.var.lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN, Equal.E.C.Corr = T) {
-  if (Equal.E.C.Corr == T) {
+calculate_var_lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN, Equal_E_C_Corr = T) {
+  if (Equal_E_C_Corr == T) {
     mvcorr <- 0 # cor.test(log(c(CMean, EMean)), log(c(CSD, ESD)))$estimate   old, slightly incorrect
     S2 <- CSD^2 / (CN * (CMean^2)) + 1 / (2 * (CN - 1)) - 2 * mvcorr * sqrt((CSD^2 / (CN * (CMean^2))) * (1 / (2 * (CN - 1)))) + ESD^2 / (EN * (EMean^2)) + 1 / (2 * (EN - 1)) - 2 * mvcorr * sqrt((ESD^2 / (EN * (EMean^2))) * (1 / (2 * (EN - 1))))
   }
@@ -140,34 +137,34 @@ Calc.var.lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN, Equal.E.C.Corr = T) {
   S2
 }
 
-Calc.lnVR <- function(CSD, CN, ESD, EN) {
+calculate_lnVR <- function(CSD, CN, ESD, EN) {
   log(ESD) - log(CSD) + 1 / (2 * (EN - 1)) - 1 / (2 * (CN - 1))
 }
 
-Calc.var.lnVR <- function(CN, EN) {
+calculate_var_lnVR <- function(CN, EN) {
   1 / (2 * (EN - 1)) + 1 / (2 * (CN - 1))
 }
 
-Calc.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
+calculate_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
   log(EMean) - log(CMean)
 }
 
-Calc.var.lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
+calculate_var_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
   CSD^2 / (CN * CMean^2) + ESD^2 / (EN * EMean^2)
 }
 ```
 
-## The dataset
+## Load & clean data
 
 Having loaded the necessary functions, we can get started on the dataset.
 
-We here provide the cleaned dataset, which we have saved in a folder called "export", as easy starting point. However, the full dataset can be loaded and cleaned using the data cleaning function (Function 1 above), if "#" signs in the code below are removed  (created as that is much smaller than the .csv - which we can still provide for those who absolutely want to start from scratch?)
+We here provide the cleaned dataset, which we have saved in a folder called `export`, as easy starting point. However, the full dataset can be loaded and cleaned using the data cleaning function below. We created this as it much smaller than the .csv.
 
-#### Preparation of raw data
 1) Data loading and cleaning of the csv file
-This step we have already done and provide a cleaned up file which is less computing intensive. However, the cvs is provided in case this is pereferred to be attempted, following the steps below:
 
-```{r Raw Data, eval=FALSE, include=TRUE}
+This step we have already done and provide a cleaned up file which is less computing intensive. However, the cvs is provided in case this is preferred to be attempted, following the steps below:
+
+```{r clean, eval=FALSE, include=TRUE}
 # loads the raw data, setting some default types for various columns
 
 load_raw <- function(filename) {
@@ -202,7 +199,7 @@ load_raw <- function(filename) {
 clean_raw_data <- function(mydata) {
   mydata %>%
 
-    # Fileter to IMPC source (recommened by Jeremey in email to Susi on 20 Aug 2018)
+    # Filter to IMPC source (recommend by Jeremey in email to Susi on 20 Aug 2018)
     filter(datasource_name == "IMPC") %>%
 
     # standardise trait names
@@ -217,16 +214,69 @@ clean_raw_data <- function(mydata) {
     # subset to reasonable set of variables
     # date_of_experiment: Jeremy suggested using as an indicator of batch-level effects
     select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name, sex, date_of_experiment, age_in_days, weight, parameter_name, data_point) %>%
-    arrange(production_center, biological_sample_id, age_in_days)
-}
-```
-2) Subsetting the data to choose only one data point per individual per trait
-```{r}
-# 2) Subsetting the data to choose only one data point per individual per trait
+    
+    # sort
+    arrange(production_center, biological_sample_id, age_in_days) %>%
+    
+    # filter to groups with > 1 centre  
+    group_by(parameter_name) %>%
+    mutate(center_per_trait = length(unique(production_center, na.rm = TRUE))) %>%
+    ungroup() %>% 
+    filter(center_per_trait >= 2) %>% 
 
-# this is a necessary step for the loop across all traits
-data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min, age_center) {
-  tmp <- mydata %>%
+    # Define population variable
+    mutate(population = sprintf("%s-%s", production_center, strain_name)) %>% 
+
+    # add grouping variable: these were decided based on functional groups and procedures 
+    left_join(by="parameter_name", 
+      read_csv(here("data", "ParameterGrouping.csv")) %>%
+        select(-id)
+  ) %>% 
+  #### Assign unique IDs (per trait)
+# each unique parameter_name (=trait,use trait variable) gets a unique number ('id')
+
+# We add a new variable, where redundant traits are combined
+#[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
+  mutate(id = match(parameter_name, unique(parameter_name)))
+}
+
+# Load raw data - save cleaned dataset as RDS for reuse
+
+data_raw <- load_raw(here("data","dr7.0_all_control_data.csv.gz"))
+
+dir.create("export", F, F)
+
+data_raw %>% 
+  clean_raw_data() %>% 
+  saveRDS("export/data_clean.rds")
+```
+
+For analysis we load the RDS created above:
+
+```{r load}
+data <- readRDS(here("export", "data_clean.rds")) 
+```
+
+
+Check length of different variables:
+
+```{r}
+length(unique(data$parameter_name)) # 232
+length(unique(data$parameter_group)) # 161
+length(unique(data$procedure_name)) # 26
+
+```
+
+# Meta analysis
+
+## Phase 1: across all traits
+
+Create function for sub-setting the data to choose only one data point per individual per trait. This is a necessary step for the loop across all traits
+
+```{r}
+
+data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min=0, age_center=100) {
+  mydata %>%
     filter(
       age_in_days >= age_min,
       id == parameter
@@ -235,137 +285,79 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
     mutate(age_diff = abs(age_center - age_in_days)) %>%
     group_by(biological_sample_id) %>%
     filter(age_diff == min(age_diff)) %>%
-    select(-age_diff)
-
-  # still some individuals with multiple records (because same individual appears under different procedures, so filter to one record)
-  j <- match(unique(tmp$biological_sample_id), tmp$biological_sample_id)
-  tmp[j, ]
+    select(-age_diff) %>% 
+    filter(!duplicated(biological_sample_id))
 }
 ```
 
-### Load data (raw / pre-clean)
 
-```{r}
-## Load raw data - save cleaned dataset as RDS for reuse
-# data_raw <- load_raw("data/dr7.0_all_control_data.csv") %>%
-#    clean_raw_data()
-# dir.create("export", F, F)
-# saveRDS(data_raw, "export/data_clean.rds")
-# getwd()
-data1 <- readRDS(here("export", "data_clean.rds"))
-# data1
-```
-
-### Clean data
-This requires the selection of traits that have been measured in at least 2 centers. Consequently, rare or unusual methods and procedures are being filtered out in this step.
-```{r }
-dat1 <-
-  data1 %>%
-  group_by(parameter_name) %>%
-  summarize(center_per_trait = length(unique(production_center, na.rm = TRUE)))
-
-dat2 <- merge(data1, dat1)
-dat_moreThan1center <-
-  dat2 %>%
-  filter(center_per_trait >= 2)
-
-data2 <- dat_moreThan1center
-# min(data2$center_per_trait)  # as a check if there indeed are no single occurences
-```
-
-## Meta analysis, Phase 1: across all traits
-### Preparation
-#### Define population variable 
-& add grouping variables
-
-In this step, a grouping variable is added (found in "Parameter.Grouping.csv")
-The grouping variables were decided based on functional groups and procedures 
-
-```{r }
-data3 <- data2 %>%
-  mutate(population = sprintf("%s-%s", production_center, strain_name))
-
-group <- read.csv(here("export", "ParameterGrouping.csv"))
-data <- data3
-data$parameterGroup <- group$parameter[match(data$parameter_name, group$parameter_name)]
-```
-
-#### Assign unique IDs (per trait)
-each unique parameter_name (=trait,use trait variable) gets a unique number ('id')
-
-We add a new variable, where redundant traits are combined
-[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
-
-```{r}
-# head(data)
-
-names(data)[16] <- "parameter_group"
-
-data <- transform(data, id = match(parameter_name, unique(parameter_name)))
-n1 <- length(unique(data$parameter_name)) # 232
-n2 <- length(unique(data$parameter_group)) # 161
-n3 <- length(unique(data$procedure_name)) # 26
-
-n <- length(unique(data$id))
-# n  # just to check that the number of traits is 232
-```
-
-
-#### Create matrix 
-As the current version of this script utilizes a loop instead of tidyR code, it is here necessary to create an empty matrix, in which the returning values will be stored.
-
-```{r}
-results.alltraits.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n * 14), ncol = 14))) # number of individual results per trait = 10
-names(results.alltraits.grouping) <- c("id", "lnCVR", "lnCVR_lower", "lnCVR_upper", "lnCVR_se", "lnVR", "lnVR_lower", "lnVR_upper", "lnVR_se", "lnRR", "lnRR_lower", "lnRR_upper", "lnRR_se", "sampleSize", "trait")
-```
-
-
-#### Loop running meta-analysis on all traits
+Loop running meta-analysis on all traits
 The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
 Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
 
 ```{r}
 
+(n <- length(unique(data$id)))
+
+#Create dataframe to store results
+
+results_alltraits_grouping <- 
+    tibble(id = 1:n, lnCVR=0, lnCVR_lower=0, lnCVR_upper=0, 
+           lnCVR_se=0, lnVR=0, lnVR_lower=0, lnVR_upper=0, 
+           lnVR_se=0, lnRR=0, lnRR_lower=0, lnRR_upper=0, lnRR_se=0, sampleSize=0, trait=0)
+
 for (t in 1:n) {
   tryCatch(
     {
+      
+      
       data_par_age <- data_subset_parameterid_individual_by_age(data, t, age_min = 0, age_center = 100)
-
       population_stats <- calculate_population_stats(data_par_age)
 
       results <- create_meta_analysis_effect_sizes(population_stats)
 
       # lnCVR,  log repsonse-ratio of the coefficient of variance
       cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, 
-                             random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), control = list(optimizer = "optim", optmethod = "Nelder-Mead", maxit = 1000), verbose = F, data = results)
+                             random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
+                             control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
+                                            maxit = 1000), 
+                             verbose = F, data = results)
 
-      results.alltraits.grouping[t, 2] <- cvr$b
-      results.alltraits.grouping[t, 3] <- cvr$ci.lb
-      results.alltraits.grouping[t, 4] <- cvr$ci.ub
-      results.alltraits.grouping[t, 5] <- cvr$se
+      results_alltraits_grouping[t, 2] <- cvr$b
+      results_alltraits_grouping[t, 3] <- cvr$ci.lb
+      results_alltraits_grouping[t, 4] <- cvr$ci.ub
+      results_alltraits_grouping[t, 5] <- cvr$se
 
       cvr
 
       # lnVR, comparison of standard deviations
 
-      cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR, random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), control = list(optimizer = "optim", optmethod = "Nelder-Mead", maxit = 1000), verbose = F, data = results)
+      cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR,
+                            random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
+                            control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
+                                           maxit = 1000), 
+                            verbose = F, data = results)
 
-      results.alltraits.grouping[t, 6] <- cv$b
-      results.alltraits.grouping[t, 7] <- cv$ci.lb
-      results.alltraits.grouping[t, 8] <- cv$ci.ub
-      results.alltraits.grouping[t, 9] <- cv$se
+      results_alltraits_grouping[t, 6] <- cv$b
+      results_alltraits_grouping[t, 7] <- cv$ci.lb
+      results_alltraits_grouping[t, 8] <- cv$ci.ub
+      results_alltraits_grouping[t, 9] <- cv$se
 
       # for means, lnRR
 
-      means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), control = list(optimizer = "optim", optmethod = "Nelder-Mead", maxit = 1000), data = results)
-      results.alltraits.grouping[t, 10] <- means$b
-      results.alltraits.grouping[t, 11] <- means$ci.lb
-      results.alltraits.grouping[t, 12] <- means$ci.ub
-      results.alltraits.grouping[t, 13] <- means$se
+      means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, 
+                               random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
+                               control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
+                                              maxit = 1000), 
+                               data = results)
+      results_alltraits_grouping[t, 10] <- means$b
+      results_alltraits_grouping[t, 11] <- means$ci.lb
+      results_alltraits_grouping[t, 12] <- means$ci.ub
+      results_alltraits_grouping[t, 13] <- means$se
 
 
-      results.alltraits.grouping[t, 14] <- means$k
-      results.alltraits.grouping[t, 15] <- unique(results$trait)
+      results_alltraits_grouping[t, 14] <- means$k
+      results_alltraits_grouping[t, 15] <- unique(results$trait)
     },
     error = function(e) {
       cat("ERROR :", conditionMessage(e), "\n")
@@ -378,7 +370,7 @@ for (t in 1:n) {
 ## Note Susi 31/7/2019: This dataset contains dublicated values, plus no info on what the "traits" mean. I will change Dan N's to one further belwo, that have been cleaned up already
 # FILE TO USE: METACOMBO (around line 500)
 
-# trait_meta_results <- write.csv(results.alltraits.grouping, file = "export/trait_meta_results.csv")
+# trait_meta_results <- write.csv(results_alltraits_grouping, file = "export/trait_meta_results.csv")
 ```
 
 #### Merging datasets & removal of non-converged traits
@@ -386,16 +378,17 @@ for (t in 1:n) {
 Procedure names, grouping variables etc. are merged back together with the results from the metafor analysis above.
 This requires loading of another excel sheet, "procedures.csv"
  
+
 ```{r}
 procedures <- read.csv(here("export", "procedures.csv"))
 
-results.alltraits.grouping$parameter_group <- data$parameter_group[match(results.alltraits.grouping$id, data$id)]
-results.alltraits.grouping$procedure <- data$procedure_name[match(results.alltraits.grouping$id, data$id)]
+results_alltraits_grouping$parameter_group <- data$parameter_group[match(results_alltraits_grouping$id, data$id)]
+results_alltraits_grouping$procedure <- data$procedure_name[match(results_alltraits_grouping$id, data$id)]
 
-results.alltraits.grouping$GroupingTerm <- procedures$GroupingTerm[match(results.alltraits.grouping$procedure, procedures$procedure)]
-results.alltraits.grouping$parameter_name <- data$parameter_name[match(results.alltraits.grouping$id, data$id)]
+results_alltraits_grouping$GroupingTerm <- procedures$GroupingTerm[match(results_alltraits_grouping$procedure, procedures$procedure)]
+results_alltraits_grouping$parameter_name <- data$parameter_name[match(results_alltraits_grouping$id, data$id)]
 
-meta1 <- results.alltraits.grouping
+meta1 <- results_alltraits_grouping
 n <- length(unique(meta1$parameter_name)) # 232
 ```
 
@@ -406,7 +399,7 @@ meta_clean <- meta1[ !(meta1$id %in% c(84, 144, 158, 160, 161, 162, 163, 165, 16
 removed <- length(unique(meta_clean$parameter_name)) # 218
 
 
-meta_problem <- results.alltraits.grouping[ (results.alltraits.grouping$id %in% c(84, 144, 158, 160, 161, 162, 163, 165, 166, 167, 168, 221, 222, 231)), ]
+meta_problem <- results_alltraits_grouping[ (results_alltraits_grouping$id %in% c(84, 144, 158, 160, 161, 162, 163, 165, 166, 167, 168, 221, 222, 231)), ]
 ```
 
 
@@ -475,6 +468,7 @@ model_count <- n_count %>%
 
 Extract and save parameter estimates:
 Function to collect the outcomes of the "mini" meta analysis
+
 ```{r}
 count_fun <- function(mod_sub) {
   return(c(mod_sub$reg_table$b.r, mod_sub$reg_table$CI.L, mod_sub$reg_table$CI.U, mod_sub$reg_table$SE))
@@ -482,6 +476,7 @@ count_fun <- function(mod_sub) {
 ```
 
 Extraction of values created during Meta analysis using robu meta:
+
 ```{r}
 robusub_RR <- model_count %>%
   transmute(parameter_group, estimatelnRR = map(model_lnRR, count_fun)) %>%
@@ -514,6 +509,7 @@ kable(cbind(robu_all, robu_all)) %>%
 ```
 
  Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
+
 ```{r}
 meta_all <- meta1 %>%
   filter(par_group_size == 1) %>%
@@ -524,6 +520,7 @@ meta_all <- meta1 %>%
 ```
 
 #### Combine data 
+
 ```{r}
 # Step1
 combinedmeta <- bind_rows(robu_all, meta_all)
@@ -541,6 +538,7 @@ kable(cbind(metacombo, metacombo)) %>%
 ```
 
  Clean-up and rename 
+
 ```{r}
 metacombo <- metacombo[, c(1, 21:23, 2:13)]
 names(metacombo)[3] <- "procedure"
@@ -569,6 +567,7 @@ compare <- metacombo %>%
 ## Meta-analysis, Phase 3: Second-order meta analysis for functional groups
 #### Perform meta-analyses (3 for each of the 9 grouping terms: lnCVR, lnVR, lnRR) 
 This is the full result dataset
+
 ```{r}
 
 kable(cbind(metacombo, metacombo)) %>%
@@ -578,13 +577,14 @@ kable(cbind(metacombo, metacombo)) %>%
 
 #### Prepare data
 Nesting, calculating the number of parameters within each grouping term, and running the meta-analysis
+
 ```{r}
 metacombo_final <- metacombo %>%
   group_by(GroupingTerm) %>%
   nest()
 
 
-# **Calculate number of parameters per grouping term
+# **calculate number of parameters per grouping term
 
 metacombo_final <- metacombo_final %>% mutate(para_per_GroupingTerm = map_dbl(data, nrow))
 
@@ -778,6 +778,7 @@ malebias_Fig2_alltraits <-
 
 #### Prepare data for traits with CI not overlapping 0
 create column with 1= different from zero, 0= zero included in CI
+
 ```{r}
 
 meta.plot2.sig <- meta_clean %>%
@@ -857,6 +858,7 @@ malebias_Fig2_sigtraits <-
 ```
 
 Prepare data for traits with effect size ratios > 10% larger in males
+
 ```{r}
 meta.plot2.over10 <- meta_clean %>%
   select(lnCVR, lnRR, GroupingTerm) %>%
@@ -925,6 +927,7 @@ malebias_Fig2_over10 <-
 ###  Overall results of second order meta analysis (Figure 4: overall, Figure 5: sex-bias)
 #### Restructure data for plotting 
 Data are restructured, and grouping terms are being re-ordered
+
 ```{r}
 overall3 <- gather(overall2, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -953,6 +956,7 @@ kable(cbind(overall4, overall4)) %>%
 
 #### Preparation for Plots FIGURE 4B & 5B, 5D (Second-order meta analysis results)
 Preparation: Sub-Plot  for Figure 3: all traits (4B)
+
 ```{r}
 
 Metameta_Fig3_alltraits <- overall4 %>%
@@ -1010,6 +1014,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 Prepare data 
 create column with 1= different from zero, 0= zero included in CI
 Male-biased (significant) traits
+
 ```{r}
 meta.male.plot3.sig <- metacombo %>%
   mutate(
@@ -1145,6 +1150,7 @@ overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, rev(l
 
 
 Restructure MALE data for plotting 
+
 ```{r}
 overall3.male.sig <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -1162,6 +1168,7 @@ overall4.male.sig$label <- "CI not overlapping zero"
 ```
 
 Plot Fig5b all significant results (CI not overlapping zero) for males
+
 ```{r}
 
 Metameta_Fig3_male.sig <- overall4.male.sig %>%
@@ -1218,6 +1225,7 @@ Female Fig5B sig
 
 Prepare data for traits with CI not overlapping 0
 create column with 1= different from zero, 0= zero included in CI
+
 ```{r}
 
 # female-biased traits
@@ -1369,6 +1377,7 @@ overall4.female.sig$label <- "CI not overlapping zero"
 ```
 
 Plot Fig5B all significant results (CI not overlapping zero, female )
+
 ```{r}
 
 Metameta_Fig3_female.sig <- overall4.female.sig %>%
@@ -1427,6 +1436,7 @@ Prepare data for traits with m/f difference > 10%
 create column with 1= larger, 0= diff not larger than 10%
 
 #### Male Fig 5D > 10% (male biased traits)
+
 ```{r}
 meta.male.plot3.perc <- metacombo %>%
   mutate(
@@ -1563,6 +1573,7 @@ overall.male.plot3.perc$GroupingTerm <- factor(overall.male.plot3.perc$GroupingT
 ```
 
 Restructure data for plotting : Male biased, 10% difference
+
 ```{r}
 overall3.perc <- gather(overall.male.plot3.perc, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -1584,6 +1595,7 @@ overall4.male.perc$ci.high <- as.numeric(overall4.male.perc$ci.high)
 ```
 
 Plot Fig5D  all >10% difference (male bias)
+
 ```{r}
 
 Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "Hearing") %>%
@@ -1639,6 +1651,7 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 ```
 
 #### Female Fig 5D >10%
+
 ```{r}
 
 meta.plot3.perc <- metacombo %>%
@@ -1776,6 +1789,7 @@ overall.plot3.perc$GroupingTerm <- factor(overall.plot3.perc$GroupingTerm, rev(l
 
 Restructure data for plotting
 Female bias, 10 percent difference
+
 ```{r}
 overall3.perc <- gather(overall.plot3.perc, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -1797,6 +1811,7 @@ overall4.perc$ci.high <- as.numeric(overall4.perc$ci.high)
 ```
 
 Plot Fig5D all >10% difference (female)
+
 ```{r}
 Metameta_Fig3_female.perc <- overall4.perc %>%
   ggplot(aes(y = GroupingTerm, x = value)) +
@@ -1851,6 +1866,7 @@ Metameta_Fig3_female.perc <- overall4.perc %>%
 ```
 
 #### Plot Fig5:   plots combined
+
 ```{r}
 library(ggpubr)
 Fig5b <- ggarrange(Metameta_Fig3_female.sig, Metameta_Fig3_male.sig,
@@ -1871,6 +1887,7 @@ Fig5
 ## Heterogeneity
 #### FIGURE 4 (Second-order meta analysis on heterogeneity)
 Create matrix to store results for all traits
+
 ```{r}
 results.allhetero.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n * 30), ncol = 30)))
 names(results.allhetero.grouping) <- c(
@@ -1955,12 +1972,14 @@ for (t in 1:n) {
 ```
 
 #### Exclude traits, merge datasets
+
 ```{r}
 results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
 # nrow(results.allhetero.grouping2) #218
 ```
 
 Merge data sets containing metafor results with procedure etc. names 
+
 ```{r}
 # procedures <- read.csv(here("export", "procedures.csv"))
 
@@ -1972,6 +1991,7 @@ results.allhetero.grouping2$parameter_name <- data$parameter_name[match(results.
 ```
 
 #### Correlated parameters
+
 ```{r}
 metahetero1 <- results.allhetero.grouping2
 # length(unique(metahetero1$procedure)) #18
@@ -2064,6 +2084,7 @@ Merge the two data sets (the new [robu_all.] and the initial [uncorrelated sub-t
 In this step, we 	
 1) merge the N from robumeta and the  N from metafor (s.nlevels.error) together into the same columns (N.RR, N.VR, N.CVR)
 2) calculate the total variance for metafor models as the sum of random effect variances and the residual error, then add in the same columns together with the residual variances from robumeta
+
 ```{r}
 metahetero_all <- metahetero1 %>%
   filter(par_group_size == 1) %>%
@@ -2103,6 +2124,7 @@ names(metacombohetero)[10] <- "GroupingTerm"
 ```
 
 #### Meta-analysis of heterogeneity
+
 ```{r}
 ## *Perform meta-meta-analysis (3 for each of the 9 grouping terms: var.CVR, var.VR, var.RR)
 
@@ -2232,6 +2254,7 @@ heterog2 <- bind_rows(Behaviour., Morphology., Metabolism., Physiology., Immunol
 
 #### Heterogeneity PLOT
 Restructure data for plotting 
+
 ```{r}
 heterog3 <- gather(heterog2, parameter, value, c(heteroCVR, heteroVR, heteroRR), factor_key = TRUE)
 
@@ -2258,6 +2281,7 @@ heterog4$label <- "All traits"
 ### Plot FIGURE 4 - C(Second-order meta analysis on heterogeneity)
 
 Plot Fig4 all traits
+
 ```{r}
 heterog5 <- heterog4
 heterog5$mean <- as.numeric(exp(heterog5$value))
@@ -2321,6 +2345,7 @@ Hetero4c <-
 ```
 
 #### Combined Figure 4: overall (Count data, Meta anlysis results, Heterogeneity)
+
 ```{r}
 
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits, Hetero4c, nrow = 3, align = "v", heights = c(1, 1, 1), labels = c("A", "B", "C"))
@@ -2329,6 +2354,7 @@ Fig4
 ```
 
 ## Supplemental Figures
+
 ```{r}
 ## Heterogneity, S1 C
 
@@ -2381,7 +2407,9 @@ HeteroS1 <- heterog5 %>%
 
 # ggsave("Fig4.pdf", plot = Metameta_Fig4_alltraits, width = 7, height = 6)
 ```
+
 ## Count data, including lnVR (Fig S1 A)
+
 ```{r}
 # *Prepare data for all traits
 
@@ -2446,9 +2474,11 @@ malebias_FigS1_alltraits <-
 
 # malebias_FigS1_alltraits     #(panel A in Figure S1)
 ```
+
 ###  Overall results of second order meta analysis (Figure 4: overall, Figure 5: sex-bias), INCLUDING VR
 #### Restructure data for plotting 
 Restructure MALE data for plotting 
+
 ```{r}
 overall3.male.sigS <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
 
@@ -2466,7 +2496,9 @@ overall4.male.sigS <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingT
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 ```
+
 Data are restructured, and grouping terms are being re-ordered
+
 ```{r}
 overall3S <- gather(overall2, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
 
@@ -2491,6 +2523,7 @@ overall4S$label <- "All traits"
 
 #### Preparation for Plots FIGURE S1B & S2B, S2D (Second-order meta analysis results, INCL lnVR)
 Preparation: Sub-Plot  for Figure S1: all traits (S1 B)
+
 ```{r}
 Metameta_FigS1_alltraits <- overall4S %>%
 
@@ -2544,6 +2577,7 @@ Metameta_FigS1_alltraits <- overall4S %>%
 ```
 
 #### Combined Figure S1: overall Count data, Meta anlysis results, Heterogeneity)
+
 ```{r}
 FigS1 <- ggarrange(malebias_FigS1_alltraits + xlab("percentage sex bias"), Metameta_FigS1_alltraits, HeteroS1, nrow = 3, align = "v", heights = c(1, 1, 1), labels = c("A", "B", "C"))
 FigS1
@@ -2553,6 +2587,7 @@ FigS1
 ## Figure S2: sex-bias, including VR
 
 Plot FigS2 all significant results (CI not overlapping zero) for males
+
 ```{r}
 meta.plot2.sig.bS <- meta.plot2.sig[, c("lnCVR", "lnVR", "lnRR", "lnCVRsig", "lnVRsig", "lnRRsig", "GroupingTerm")]
 
@@ -2625,7 +2660,9 @@ malebias_FigS2_sigtraits <-
 
 # malebias_FigS2_sigtraits # this is Figure S2 A
 ```
+
 Prepare data for traits with effect size ratios > 10% larger in males
+
 ```{r}
 meta.plotS2.over10 <- meta_clean %>%
   select(lnCVR, lnVR, lnRR, GroupingTerm) %>%
@@ -2770,6 +2807,7 @@ Metameta_FigS2_female.sig <- overall4.female.sigS %>%
 #Metameta_FigS2_male.sig (Figure 5B right panel)
 
 Restructure MALE data for plotting 
+
 ```{r}
 overall3.male.sigS <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
 
@@ -2788,7 +2826,9 @@ overall4.male.sigS <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingT
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 ```
+
 Plot FigS2 all significant results (CI not overlapping zero, male )
+
 ```{r}
 Metameta_FigS2_male.sig <- overall4.male.sigS %>%
   ggplot(aes(y = GroupingTerm, x = value)) +
@@ -2838,8 +2878,10 @@ Metameta_FigS2_male.sig <- overall4.male.sigS %>%
 
 # Metameta_FigS2_male.sig
 ```
+
 ### 10 % Perc sex difference, male bias
 Restructure data for plotting : Male biased, 10% difference
+
 ```{r}
 overall3S.perc <- gather(overall.male.plot3.perc, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -2863,6 +2905,7 @@ overall4S.male.perc$ci.high <- as.numeric(overall4S.male.perc$ci.high)
 ```
 
 Plot FigS2  all >10% difference (male bias)
+
 ```{r}
 Metameta_FigS2_male.perc <- overall4S.male.perc %>% # filter(., GroupingTerm != "Hearing") %>%
   ggplot(aes(y = GroupingTerm, x = value)) +
@@ -2915,8 +2958,10 @@ Metameta_FigS2_male.perc <- overall4S.male.perc %>% # filter(., GroupingTerm != 
 
 # Metameta_FigS2_male.perc (Figure 5D right panel)
 ```
+
 Restructure data for plotting: 
 Female bias, 10 percent difference, including VR
+
 ```{r}
 overall3S.perc <- gather(overall.plot3.perc, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE) # lnVR,
 
@@ -2940,6 +2985,7 @@ overall4S.perc$ci.high <- as.numeric(overall4S.perc$ci.high)
 ```
 
 Plot Fig5D all >10% difference (female)
+
 ```{r}
 Metameta_Fig3S_female.perc <- overall4S.perc %>%
   ggplot(aes(y = GroupingTerm, x = value)) +
@@ -2992,7 +3038,9 @@ Metameta_Fig3S_female.perc <- overall4S.perc %>%
 
 # Metameta_Fig3S_female.perc (Figure 5D left panel)
 ```
+
 Figure S2 
+
 ```{r}
 FigS2c <- ggarrange(Metameta_FigS2_female.sig, Metameta_FigS2_male.sig,
   ncol = 2, nrow = 1, widths = c(1, 1.20), heights = c(1, 1)
