@@ -292,15 +292,15 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
 
 
 Loop running meta-analysis on all traits
-The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
-Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
+
+* The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
+* Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
 
 ```{r}
 
 (n <- length(unique(data$id)))
 
-#Create dataframe to store results
-
+# Create dataframe to store results
 results_alltraits_grouping <- 
     tibble(id = 1:n, lnCVR=0, lnCVR_lower=0, lnCVR_upper=0, 
            lnCVR_se=0, lnVR=0, lnVR_lower=0, lnVR_upper=0, 
@@ -309,69 +309,47 @@ results_alltraits_grouping <-
 for (t in 1:n) {
   tryCatch(
     {
-      
-      
-      data_par_age <- data_subset_parameterid_individual_by_age(data, t, age_min = 0, age_center = 100)
-      population_stats <- calculate_population_stats(data_par_age)
-
-      results <- create_meta_analysis_effect_sizes(population_stats)
+      results <- data %>% 
+        data_subset_parameterid_individual_by_age(t) %>%
+        calculate_population_stats() %>%
+        create_meta_analysis_effect_sizes()
 
       # lnCVR,  log repsonse-ratio of the coefficient of variance
       cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, 
                              random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
                              control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
-                                            maxit = 1000), 
-                             verbose = F, data = results)
-
-      results_alltraits_grouping[t, 2] <- cvr$b
-      results_alltraits_grouping[t, 3] <- cvr$ci.lb
-      results_alltraits_grouping[t, 4] <- cvr$ci.ub
-      results_alltraits_grouping[t, 5] <- cvr$se
-
-      cvr
+                                            maxit = 1000), verbose = F, data = results)
 
       # lnVR, comparison of standard deviations
-
       cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR,
                             random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
                             control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
-                                           maxit = 1000), 
-                            verbose = F, data = results)
-
-      results_alltraits_grouping[t, 6] <- cv$b
-      results_alltraits_grouping[t, 7] <- cv$ci.lb
-      results_alltraits_grouping[t, 8] <- cv$ci.ub
-      results_alltraits_grouping[t, 9] <- cv$se
+                                           maxit = 1000), verbose = F, data = results)
 
       # for means, lnRR
-
       means <- metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR, 
                                random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
                                control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
-                                              maxit = 1000), 
-                               data = results)
-      results_alltraits_grouping[t, 10] <- means$b
-      results_alltraits_grouping[t, 11] <- means$ci.lb
-      results_alltraits_grouping[t, 12] <- means$ci.ub
-      results_alltraits_grouping[t, 13] <- means$se
+                                              maxit = 1000), verbose = F, data = results)
+      
+      f <- function(x) unlist(x[c("b", "ci.lb", "ci.ub", "se")])
 
-
-      results_alltraits_grouping[t, 14] <- means$k
-      results_alltraits_grouping[t, 15] <- unique(results$trait)
+      results_alltraits_grouping2[t, 2:15] <- 
+        c(f(cvr), f(cv), f(means), means$k, unique(results$trait))
     },
     error = function(e) {
       cat("ERROR :", conditionMessage(e), "\n")
     }
   )
 }
+```
 
-# Now that we have a "results" table with each of the meta-analytic means for all effect sizes of interest, we can use this table as part of the Shiny App, which will then be able to back calculate the percentage differences between males and females for mean, variance and coefficient of variance. We'll export and use this in the Shiny App. **Note that I have not dealt with convergence issues in some of these models, and so, this will need to be done down the road**
+Now that we have a "results" table with each of the meta-analytic means for all effect sizes of interest, we can use this table as part of the Shiny App, which will then be able to back calculate the percentage differences between males and females for mean, variance and coefficient of variance. We'll export and use this in the Shiny App. **Note that I have not dealt with convergence issues in some of these models, and so, this will need to be done down the road**
 
 ## Note Susi 31/7/2019: This dataset contains dublicated values, plus no info on what the "traits" mean. I will change Dan N's to one further belwo, that have been cleaned up already
 # FILE TO USE: METACOMBO (around line 500)
 
 # trait_meta_results <- write.csv(results_alltraits_grouping, file = "export/trait_meta_results.csv")
-```
 
 #### Merging datasets & removal of non-converged traits
 
