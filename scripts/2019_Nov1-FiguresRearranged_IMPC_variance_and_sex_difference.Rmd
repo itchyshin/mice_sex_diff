@@ -197,7 +197,11 @@ load_raw <- function(filename) {
 
 # Apply some standard cleaning to the data
 clean_raw_data <- function(mydata) {
-  mydata %>%
+  
+  group <- read_csv(here("data", "ParameterGrouping.csv"))
+  
+  tmp <- 
+    mydata %>%
 
     # Filter to IMPC source (recommend by Jeremey in email to Susi on 20 Aug 2018)
     filter(datasource_name == "IMPC") %>%
@@ -213,48 +217,57 @@ clean_raw_data <- function(mydata) {
 
     # subset to reasonable set of variables
     # date_of_experiment: Jeremy suggested using as an indicator of batch-level effects
-    select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name, sex, date_of_experiment, age_in_days, weight, parameter_name, data_point) %>%
-    
+    select(production_center, strain_name, strain_accession_id, biological_sample_id, pipeline_stable_id, procedure_group, procedure_name, sex, date_of_experiment, age_in_days, weight, parameter_name, data_point) %>% 
+
     # sort
-    arrange(production_center, biological_sample_id, age_in_days) %>%
-    
+    arrange(production_center, biological_sample_id, age_in_days)
+      
     # filter to groups with > 1 centre  
-    group_by(parameter_name) %>%
-    mutate(center_per_trait = length(unique(production_center, na.rm = TRUE))) %>%
-    ungroup() %>% 
+    # **Review** - retaining merge here to retain ordering of data used in previous version
+    # usually i would use mutate instead of creating sperate dataset
+    merge(tmp, 
+          tmp %>% group_by(parameter_name) %>%
+    summarise(center_per_trait = length(unique(production_center, na.rm = TRUE)))
+        )%>%
     filter(center_per_trait >= 2) %>% 
 
     # Define population variable
     mutate(population = sprintf("%s-%s", production_center, strain_name)) %>% 
 
     # add grouping variable: these were decided based on functional groups and procedures 
-    left_join(by="parameter_name", 
-      read_csv(here("data", "ParameterGrouping.csv")) %>%
-        select(-id)
-  ) %>% 
-  #### Assign unique IDs (per trait)
-# each unique parameter_name (=trait,use trait variable) gets a unique number ('id')
+    # **Review** - retaining match here to retain ordering of data used in rpevious version
+    mutate(parameter_group = group$parameter_group[match(parameter_name, group$parameter_name)] ) %>%
+    # usually i would use left_join
+        # left_join(by="parameter_name", 
+    #   read_csv(here("data", "ParameterGrouping.csv")) %>%
+    #     select(-id)
+    # ) %>%
+          
+    # Assign unique IDs (per trait)
+    # each unique parameter_name (=trait,use trait variable) gets a unique number ('id')
 
-# We add a new variable, where redundant traits are combined
-#[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
-  mutate(id = match(parameter_name, unique(parameter_name)))
+    # We add a new variable, where redundant traits are combined
+    #[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
+    mutate(id = match(parameter_name, unique(parameter_name))) %>% 
+    as_tibble()
 }
 
 # Load raw data - save cleaned dataset as RDS for reuse
-
 data_raw <- load_raw(here("data","dr7.0_all_control_data.csv.gz"))
-
 dir.create("export", F, F)
 
-data_raw %>% 
-  clean_raw_data() %>% 
-  saveRDS("export/data_clean.rds")
+data <- data_raw %>% 
+  clean_raw_data() 
+saveRDS(data, "export/data_clean.rds")
 ```
 
-For analysis we load the RDS created above:
+For analysis we load the RDS created above and other datasets:
 
 ```{r load}
 data <- readRDS(here("export", "data_clean.rds")) 
+
+procedures <- read_csv(here("data", "procedures.csv"))
+
 ```
 
 
@@ -267,16 +280,14 @@ length(unique(data$procedure_name)) # 26
 
 ```
 
-# Meta analysis
-
-## Phase 1: across all traits
+# Phase 1: across all traits
 
 Create function for sub-setting the data to choose only one data point per individual per trait. This is a necessary step for the loop across all traits
 
 ```{r}
 
 data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min=0, age_center=100) {
-  mydata %>%
+  tmp <- mydata %>%
     filter(
       age_in_days >= age_min,
       id == parameter
@@ -285,9 +296,14 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
     mutate(age_diff = abs(age_center - age_in_days)) %>%
     group_by(biological_sample_id) %>%
     filter(age_diff == min(age_diff)) %>%
-    select(-age_diff) %>% 
-    filter(!duplicated(biological_sample_id))
-}
+    select(-age_diff)# %>% 
+#    filter(!duplicated(biological_sample_id))
+
+    
+  # still some individuals with multiple records (because same individual appears under different procedures, so filter to one record)
+  j <- match(unique(tmp$biological_sample_id), tmp$biological_sample_id)
+  tmp[j, ] 
+  }
 ```
 
 
@@ -334,51 +350,95 @@ for (t in 1:n) {
       
       f <- function(x) unlist(x[c("b", "ci.lb", "ci.ub", "se")])
 
-      results_alltraits_grouping2[t, 2:15] <- 
-        c(f(cvr), f(cv), f(means), means$k, unique(results$trait))
+      results_alltraits_grouping[t, 2:14] <- c(f(cvr), f(cv), f(means), means$k)
+      results_alltraits_grouping[t, 15] <- unique(results$trait)
     },
     error = function(e) {
-      cat("ERROR :", conditionMessage(e), "\n")
+      cat("ERROR :", t, conditionMessage(e), "\n")
     }
   )
 }
 ```
 
+--------
+**REVIEW**: The above loop gives some errors, can these be fixed?
+
+
+ERROR : 84 Optimizer (optim) did not achieve convergence (convergence = 10). 
+ERROR : 158 Optimizer (optim) did not achieve convergence (convergence = 10). 
+ERROR : 160 NA/NaN/Inf in 'y' 
+ERROR : 161 NA/NaN/Inf in 'y' 
+ERROR : 162 NA/NaN/Inf in 'y' 
+ERROR : 163 NA/NaN/Inf in 'y' 
+ERROR : 165 NA/NaN/Inf in 'y' 
+ERROR : 166 NA/NaN/Inf in 'y' 
+ERROR : 168 NA/NaN/Inf in 'y'
+ERROR : 231 NA/NaN/Inf in 'y' 
+
+
+Also a bunch of warnings, are any of these a concern?
+
+> warnings()
+Warning messages:
+1: In metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR,  ... :
+  Rows with NAs omitted from model fitting.
+...
+13: In metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR,  ... :
+  There are outcomes with non-positive sampling variances.
+14: In metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR,  ... :
+  'V' appears to be not positive definite.
+16: In metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR,  ... :
+  Single-level factor(s) found in 'random' argument. Corresponding 'sigma2' value(s) fixed to 0.
+...
+50: In metafor::rma.mv(yi = effect_size_RR, V = sample_variance_RR,  ... :
+  'V' appears to be not positive definite
+
+------
 Now that we have a "results" table with each of the meta-analytic means for all effect sizes of interest, we can use this table as part of the Shiny App, which will then be able to back calculate the percentage differences between males and females for mean, variance and coefficient of variance. We'll export and use this in the Shiny App. **Note that I have not dealt with convergence issues in some of these models, and so, this will need to be done down the road**
 
-## Note Susi 31/7/2019: This dataset contains dublicated values, plus no info on what the "traits" mean. I will change Dan N's to one further belwo, that have been cleaned up already
-# FILE TO USE: METACOMBO (around line 500)
+(Note Susi 31/7/2019: This dataset contains dublicated values, plus no info on what the "traits" mean. I will change Dan N's to one further belwo, that have been cleaned up already
+FILE TO USE: METACOMBO (around line 500))
 
-# trait_meta_results <- write.csv(results_alltraits_grouping, file = "export/trait_meta_results.csv")
+### Merging datasets & removal of non-converged traits
 
-#### Merging datasets & removal of non-converged traits
-
-Procedure names, grouping variables etc. are merged back together with the results from the metafor analysis above.
-This requires loading of another excel sheet, "procedures.csv"
+Procedure names, grouping variables etc. are merged back together with the results from the metafor analysis above.This requires loading of another excel sheet, "procedures.csv"
  
 
 ```{r}
-procedures <- read.csv(here("export", "procedures.csv"))
+results_alltraits_grouping2 <- 
+  results_alltraits_grouping %>% 
+  left_join(by="id",
+             data %>% select(id, parameter_group, procedure = procedure_name, parameter_name) %>%
+              # REVIEW -- this bext line replciates precious code, but removes some procedures, is that right?
+              filter(!duplicated(id))
+            ) %>%
+  left_join(by="procedure", 
+            procedures %>% distinct()
+            )
+  
 
-results_alltraits_grouping$parameter_group <- data$parameter_group[match(results_alltraits_grouping$id, data$id)]
-results_alltraits_grouping$procedure <- data$procedure_name[match(results_alltraits_grouping$id, data$id)]
-
-results_alltraits_grouping$GroupingTerm <- procedures$GroupingTerm[match(results_alltraits_grouping$procedure, procedures$procedure)]
-results_alltraits_grouping$parameter_name <- data$parameter_name[match(results_alltraits_grouping$id, data$id)]
-
-meta1 <- results_alltraits_grouping
-n <- length(unique(meta1$parameter_name)) # 232
+n <- length(unique(results_alltraits_grouping2$parameter_name)) # 232
 ```
 
 Removal of traits that did not achieve convergence, are nonsensical for analysis of variance (such as traits that show variation, such as number of ribs, digits, etc). 14 traits from the originally 232 that had been included are removed.
 
+**Review**: How did we determine this the ones with problems?
+
 ```{r}
-meta_clean <- meta1[ !(meta1$id %in% c(84, 144, 158, 160, 161, 162, 163, 165, 166, 167, 168, 221, 222, 231)), ]
-removed <- length(unique(meta_clean$parameter_name)) # 218
 
-
-meta_problem <- results_alltraits_grouping[ (results_alltraits_grouping$id %in% c(84, 144, 158, 160, 161, 162, 163, 165, 166, 167, 168, 221, 222, 231)), ]
+has_problems <- c(84, 144, 158, 160, 161, 162, 163, 165, 166, 167, 168, 221, 222, 231)
+meta_clean <- results_alltraits_grouping2 %>% filter(!id %in% has_problems)
+meta_problem <- results_alltraits_grouping2 %>% filter(id %in% has_problems)
 ```
+
+**Reveiw**: check against old script -- identical, remove once fixed
+
+```{r, eval=FALSE}
+meta_clean.test <- readRDS("../meta_clean.test.rds")
+all.equal(meta_clean, meta_clean.test)
+all.equal(meta_clean %>% select(-parameter_group), meta_clean.test %>% mutate(id=as.integer(id), GroupingTerm = as.character(GroupingTerm)))
+```
+
 
 
 ## Meta-analysis, Phase 2: non-independent traits
@@ -393,10 +453,11 @@ Here we double check numbers of trait parameters in the dataset
 ```{r}
 
 meta1 <- meta_clean
-# length(unique(meta1$procedure)) #18
-# length(unique(meta1$GroupingTerm)) #9
-# length(unique(meta1$parameter_group)) # 148 levels. To be used as grouping factor for meta-meta analysis / collapsing down based on things that are classified identically in "parameter_group" but have different "parameter_name"
-# length(unique(meta1$parameter_name)) #218
+length(unique(meta1$procedure)) #18
+length(unique(meta1$GroupingTerm)) #9
+# Review: next line now 155 not 148
+length(unique(meta1$parameter_group)) # 148 levels. To be used as grouping factor for meta-meta analysis / collapsing down based on things that are classified identically in "parameter_group" but have different "parameter_name"
+length(unique(meta1$parameter_name)) #218
 ```
 
 #### Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size) 
@@ -408,27 +469,39 @@ This serves to identify and separate the traits that are correlated from the ful
 kable(cbind(meta1 %>% count(parameter_group))) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
-
-meta1b <-
-  meta1 %>%
-  group_by(parameter_group) %>%
-  summarize(par_group_size = length(unique(parameter_name, na.rm = TRUE)))
-# this gives a summary of number of parameter names in each parameter group, now it neeeds to get merged it back together
-
-
-meta1$par_group_size <- meta1b$par_group_size[match(meta1$parameter_group, meta1b$parameter_group)]
-
-# Create subsets with > 1 count (par_group_size > 1)
-
-meta1_sub <- subset(meta1, par_group_size > 1) # 90 observations
-meta1_sub$sampleSize <- as.numeric(meta1_sub$sampleSize)
 ```
 
+```{r}
+meta1_sub <- meta1 %>%
+  # add summary of number of parameter names in each parameter group
+  group_by(parameter_group) %>%
+  mutate(par_group_size = length(unique(parameter_name)), 
+         sampleSize = as.numeric(sampleSize)) %>% 
+  ungroup() %>% 
+  # Create subsets with > 1 count (par_group_size > 1)
+  filter(par_group_size > 1) # 90 observations
+```
 
 #### Meta-analyses on correlated (sub-)traits, using robumeta` 
 The subset of the data is prepared (nested), and in this first step the model of the meta analysis effect sizes are calculated
 
 ```{r}
+
+
+meta1b <-
+  meta1 %>%
+  group_by(parameter_group) %>% 
+  summarize(par_group_size = length(unique(parameter_name, na.rm = TRUE)))
+#this gives a summary of number of parameter names in each parameter group, now it neeeds to get merged it back together
+
+
+meta1$par_group_size <- meta1b$par_group_size[match(meta1$parameter_group, meta1b$parameter_group)]
+
+# Create subsets with > 1 count (par_group_size > 1) 
+
+meta1_sub<-subset(meta1,par_group_size >1) # 90 observations   
+meta1_sub$sampleSize <- as.numeric(meta1_sub$sampleSize)
+
 # nesting
 n_count <- meta1_sub %>%
   group_by(parameter_group) %>%
@@ -486,7 +559,7 @@ kable(cbind(robu_all, robu_all)) %>%
   scroll_box(width = "100%", height = "200px")
 ```
 
- Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
+Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
 
 ```{r}
 meta_all <- meta1 %>%
