@@ -1,9 +1,9 @@
 ---
 title: "Sex and Power: sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
-author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky,Robert  Brooks,
+author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Brooks,
   Will Cornwell, Daniel Falster, Malgortaza Lagisz, Jeremy Mason, Daniel Noble, Alistair
   Senior & Shinichi Nakagawa
-date: "March 2020"
+date: "April 2020"
 output:
   html_document:
     code_download: yes
@@ -29,6 +29,8 @@ always_allow_html: yes
 # Set-up
 
 ## Loading packages & custom functions
+
+## Packages
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(
@@ -191,9 +193,9 @@ calculate_var_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 
 ### 1) Data loading and cleaning of the csv file
 
-This step we have already done and provide a cleaned up file which is less computing intensive and which we have saved in a folder called `export`. However, the cvs is provided in case this is preferred to be attempted, following the steps below:
+This step we have already done and provide a cleaned up file which is less computing intensive and which we have saved in a folder called `export`. However, the cvs is provided in case this is preferred to be attempted, following the steps below: [This code is currently excluded from showing in this html file, but can be viewed and enabled / run in the downloadable .rmd file. However, it requires the .gz file containing the raw data in the "export" folder. Unfortuntaltely, that file can not be provided via github, as is too large (274MB). It will be freely accessible, uploaded on dryad. Link to dryad file HERE]
 
-```{r clean, eval=FALSE, include=TRUE}
+```{r clean, eval=FALSE, include=FALSE}
 # loads the raw data, setting some default types for various columns
 
 load_raw <- function(filename) {
