@@ -1,4 +1,4 @@
-id,parameter_name,parameter_group
+,parameter_name,parameter
 1,% pre-pulse inhibition - global,pre-pulse inhibition
 2,% pre-pulse inhibition - ppi1,pre-pulse inhibition
 3,% pre-pulse inhibition - ppi2,pre-pulse inhibition
