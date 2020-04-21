@@ -727,7 +727,8 @@ All <- All %>% mutate(GroupingTerm = "All")
 overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology, Hematology, Heart, Hearing, Eye, All) 
 
 ```
-### Supplemental Table 4_NEW
+### Supplemental Table 4
+MISSING table descpition. Refer to in ms.
 ```{r}
 kable(overall2, , digits = 3) %>%
  kable_styling() %>%
@@ -861,6 +862,7 @@ library(grid)
 male <- readPNG(here("images", "MaleAqua.png"))
 female <- readPNG(here("images", "FemaleSalmon.png"))
 
+
 Metameta_Fig3_alltraits <- overall4 %>%
 
   ggplot(aes(y = GroupingTerm, x = value)) +
@@ -911,7 +913,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
   annotation_custom(rasterGrob(female), xmin = - 0.2, xmax = -0.1, ymin = 2.3, ymax = 4) +
   annotation_custom(rasterGrob(male), xmin = 0.1, xmax = 0.2, ymin = 2.3, ymax = 4)
 
-# Metameta_Fig3_alltraits
+#Metameta_Fig3_alltraits
 ```
 
 ### Figure 4
@@ -919,7 +921,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Step D (figure 3). Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure 3). Both panels represent results evaluated across all traits (Phase 3, Figure 3). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
 
 ```{r}
-Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(1, 1), labels = c("A", "B"))
+Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(8, 8), labels = c("A", "B"))
 Fig4
 ```
 
@@ -2089,8 +2091,8 @@ HeteroS1 <-
 ```
 
 ## Heterogeneity Table and Plot
-### Supplemental Table 4: "Heterogeneity within groups"
- SZ: missing a desciption so far.
+### Supplemental Table 5: "Heterogeneity within groups"
+ SZ: missing a desciption so far. MISSING!! Also: rearrange table structure, what does this show??
 ```{r}
 kable(heterog6, digits = 3) %>%
   kable_styling() %>%
