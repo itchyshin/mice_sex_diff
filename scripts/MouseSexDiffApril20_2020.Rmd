@@ -561,7 +561,7 @@ metacombo %>%
 We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
 
 ```{r}
-kable(metacombo) %>%
+kable(metacombo, digits = 3) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
 
@@ -725,6 +725,14 @@ All <- overall_all1 %>%
 All <- All %>% mutate(GroupingTerm = "All")
 
 overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology, Hematology, Heart, Hearing, Eye, All) 
+
+```
+### Supplemental Table 4_NEW
+```{r}
+kable(overall2, , digits = 3) %>%
+ kable_styling() %>%
+  scroll_box(width = "100%", height = "200px")
+
 ```
 
 # Visualisation
@@ -846,6 +854,9 @@ overall4$label <- "All traits"
 ####  PLOT 4B
 
 #adding male / female symbols for Figure 4B
+# additional packages for intergating male / female symbols in plot 4
+library(png)
+library(grid)
 
 male <- readPNG(here("images", "MaleAqua.png"))
 female <- readPNG(here("images", "FemaleSalmon.png"))
@@ -1832,7 +1843,7 @@ metacombohetero$GroupingTerm2 <- metahetero1$GroupingTerm[match(metacombohetero$
 metacombohetero <- metacombohetero %>% select(parameter_group, var.CVR, N.CVR, var.VR, N.VR, var.RR, N.RR, counts, procedure = procedure2, GroupingTerm = GroupingTerm2)  
 
 # Invidual table for heterogeneity across all traits
-# kable(metacombohetero) %>%
+# kable(metacombohetero,, digits = 3) %>%
  # kable_styling() %>%
   #scroll_box(width = "100%", height = "200px")
 
@@ -2081,7 +2092,7 @@ HeteroS1 <-
 ### Supplemental Table 4: "Heterogeneity within groups"
  SZ: missing a desciption so far.
 ```{r}
-kable(heterog6) %>%
+kable(heterog6, digits = 3) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
 ```
