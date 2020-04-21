@@ -727,7 +727,8 @@ All <- All %>% mutate(GroupingTerm = "All")
 overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology, Hematology, Heart, Hearing, Eye, All) 
 
 ```
-### Supplemental Table 4_NEW
+### Supplemental Table 4
+MISSING table descpition. Refer to in ms.
 ```{r}
 kable(overall2, , digits = 3) %>%
  kable_styling() %>%
@@ -860,6 +861,7 @@ library(grid)
 
 male <- readPNG(here("images", "MaleAqua.png"))
 female <- readPNG(here("images", "FemaleSalmon.png"))
+
 
 Metameta_Fig3_alltraits <- overall4 %>%
 
@@ -2089,8 +2091,8 @@ HeteroS1 <-
 ```
 
 ## Heterogeneity Table and Plot
-### Supplemental Table 4: "Heterogeneity within groups"
- SZ: missing a desciption so far.
+### Supplemental Table 5: "Heterogeneity within groups"
+ SZ: missing a desciption so far. MISSING!! Also: rearrange table structure, what does this show??
 ```{r}
 kable(heterog6, digits = 3) %>%
   kable_styling() %>%
