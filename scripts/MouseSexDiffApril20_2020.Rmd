@@ -42,7 +42,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r}
+```{r packages}
 library(readr)
 library(dplyr)
 library(metafor)
@@ -90,7 +90,7 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
 Create function called: "calculate_population_stats"
 This function groups animals from the same strain and same insitiution together. This is done for each trait seoarately, and only for traits that have been measured in both sexes. Any group containing fewer than 5 individuals is excluded.
 
-```{r}
+```{r PopStatsFunction}
 calculate_population_stats <- function(mydata, min_individuals = 5) {
   mydata %>%
     group_by(population, strain_name, production_center, sex) %>%
@@ -117,7 +117,7 @@ calculate_population_stats <- function(mydata, min_individuals = 5) {
 ### 3) Extraction of effect sizes and sample variances
 Function: "create_meta_analysis_effect_sizes"
 
-```{r}
+```{r EffectSizeFunction}
 create_meta_analysis_effect_sizes <- function(mydata) {
   i <- seq(1, nrow(mydata), by = 2)
   input <- data.frame(
@@ -153,7 +153,7 @@ Based on a function created by A M Senior @ the University of Otago NZ 03/01/201
 * The second function calculates the measurement error variance for lnCVR. As well as the aforementioned parameters, this function also takes Equal_E_C_Corr (default = T), which must be True or False. If true, the function assumes that the correlation between mean and sd (Taylor's Law)  is equal for the mean and control groups, and, thus these data are pooled. If False the mean-SD correlation for the experimental and control groups are calculated separately from one another.
 * Similar functions are then implemented for lnVR (for comparison of standard deviations) and ln RR  (for comparison of means) 
  
-```{r}
+```{r MetaAnalysesFunction}
 
 calculate_lnCVR <- function(CMean, CSD, CN, EMean, ESD, EN) {
   log(ESD) - log(EMean) + 1 / (2 * (EN - 1)) - (log(CSD) - log(CMean) + 1 / (2 * (CN - 1)))
@@ -193,7 +193,7 @@ calculate_var_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 
 ### 1) Data loading and cleaning of the csv file
 
-This step we have already done and provide a cleaned up file which is less computing intensive and which we have saved in a folder called `export`. However, the cvs is provided in case this is preferred to be attempted, following the steps below: [This code is currently excluded from showing in this html file, but can be viewed and enabled / run in the downloadable .rmd file. However, it requires the .gz file containing the raw data in the "export" folder. Unfortuntaltely, that file can not be provided via github, as is too large (274MB). It will be freely accessible, uploaded on dryad. Link to dryad file HERE]
+This step we have already done and provide a cleaned up file which is less computing intensive and which we have saved in a folder called `export`. However, the cvs is provided in case this is preferred to be attempted, following the steps below: [This code is currently excluded from showing in this html file, but can be viewed and enabled / run in the downloadable .rmd file. However, it requires the .gz file containing the raw data in the "export" folder. Unfortuntaltely, that file can not be provided via github, as is too large (274MB). It is freely accessible, uploaded on zenodo.org (https://zenodo.org/deposit/3759701)
 
 ```{r clean, eval=FALSE, include=FALSE}
 # loads the raw data, setting some default types for various columns
@@ -296,7 +296,7 @@ procedures <- read_csv(here("data", "procedures.csv"))
 ### Supplemental Table 1: "Strains and Center Sample Sizes"
 This table summarises the available numbers of male and female mice from each strain and originating institution.
 
-```{r include=FALSE}
+```{r Table1_prep, include=FALSE}
 # Initial checks
 length(unique(data$parameter_name)) # 232 traits
 length(unique(data$parameter_group)) # 161 parameter groups
@@ -307,7 +307,7 @@ length(unique(data$biological_sample_id)) # 27147 individial mice
 ST1 <- (cbind(data %>% group_by(production_center, strain_name) %>% count(biological_sample_id, sex) %>% count(sex) %>% print(n = Inf))) 
 ```
 
-```{r}
+```{r Table1}
 
 kable(ST1) %>%
   kable_styling() %>%
@@ -324,7 +324,7 @@ kable(ST1) %>%
 * The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
 * Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
 
-```{r}
+```{r loop, message=FALSE, warning=FALSE, include=FALSE}
 
 n <- length(unique(data$id))
 
@@ -385,7 +385,7 @@ The produced "Warnings" indicate cases where variance components are set to zero
 
 Procedure names, grouping variables and trait names ("parameter_names") are merged back together with the results from the metafor analysis above.
  
-```{r}
+```{r cleanMeta1}
 results_alltraits_grouping2 <- 
   results_alltraits_grouping %>% 
   left_join(by="id",
@@ -428,7 +428,7 @@ Count of number of parameter names (correlated sub-traits) in each parameter gro
 ### Supplemental Table 2: "Numbers of correlated and uncorrelated traits"
 This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
 
-```{r}
+```{r Table2_Meta1}
 # Here we double check numbers of trait parameters in the dataset
 meta1 <- meta_clean 
 # length(unique(meta1$procedure)) #18
@@ -456,7 +456,7 @@ kable(cbind(meta1 %>% count(parameter_group))) %>%
 #### Meta-analyses on correlated (sub-)traits, using robumeta` 
 Here we pepare the subset of the data (using nest()), and in this first step the model of the meta-analysis effect sizes are calculated
 
-```{r}
+```{r corrTraits}
 
 # Create summary of number of parameter names in each parameter group, and merge back together
 
@@ -560,7 +560,7 @@ metacombo %>%
 
 We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
 
-```{r}
+```{r Table3}
 kable(metacombo, digits = 3) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
@@ -576,7 +576,7 @@ kable(metacombo, digits = 3) %>%
 
 Nesting, calculating the number of parameters within each grouping term, and running the meta-analyses
 
-```{r}
+```{r MetaGrouping}
 metacombo_final <- metacombo %>%
   group_by(GroupingTerm) %>%
    nest()
@@ -632,7 +632,7 @@ overall_all1 <- metacombo_final_all %>%
 ### Re-structuring the data for each grouping term
 We here delete unused variables, and select the respective effect sizes. Please note - the referencing of the cells does NOT depend on previous ordering of the data. This would only be affected if the output structure from metafor::rma.uni changes. 
 
-```{r}
+```{r MetaGroup_extraction}
 Behaviour <- overall1 %>% 
   filter(., GroupingTerm == "Behaviour") %>% 
   mutate(
@@ -729,7 +729,7 @@ overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology,
 ```
 ### Supplemental Table 4
 MISSING table descpition. Refer to in ms.
-```{r}
+```{r Table4}
 kable(overall2, , digits = 3) %>%
  kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
@@ -743,7 +743,7 @@ This includes all separate eligible traits.
 Re-ordering of grouping terms. 
 Preparation of subplot 4A
 
-```{r}
+```{r Fig4_prep}
 
 meta_clean$GroupingTerm <- factor(meta_clean$GroupingTerm, levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", "Immunology", "Hematology", "Heart", "Hearing", "Eye"))
 meta_clean$GroupingTerm <- factor(meta_clean$GroupingTerm, rev(levels(meta_clean$GroupingTerm)))
@@ -831,7 +831,7 @@ malebias_Fig2_alltraits <-
 #### Re-structure data for plotting 
 Data are re-structured, and grouping terms are being re-ordered
 
-```{r}
+```{r Fig4_B}
 overall3 <- gather(overall2, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) 
 
 lnCVR.ci <- overall3 %>%
@@ -920,7 +920,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 
 Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Step D (figure 3). Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure 3). Both panels represent results evaluated across all traits (Phase 3, Figure 3). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
 
-```{r}
+```{r Fig4}
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(8, 8), labels = c("A", "B"))
 Fig4
 ```
@@ -932,7 +932,7 @@ To further investigate sex bias in this dataset, and in particular if the extent
 
 To do this, we select only traits that have CIs that do not overlap with zero.
 The code below creates Figure 5A.
-```{r}
+```{r Fig5_prep}
 
 meta.plot2.sig <- meta_clean %>%
   mutate(
@@ -1428,7 +1428,7 @@ Metameta_Fig3_female.sig  <- overall4.female.sig %>%
 ####  Figure 5
 Sex biases in trait values across trait groups (Step J in Figure 3). The panels in A show differences in the number of affected traits, in variance (lnCVR) and means (lnRR), where there is a significant difference between the sexes (i.e CI not overlapping zero). Panel B shows results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
 
-```{r}
+```{r Fig5}
 #Joining the Parts:
   
   Fig5B <- ggarrange(Metameta_Fig3_female.sig, Metameta_Fig3_male.sig,
@@ -1449,7 +1449,7 @@ Fig5
 ### Count data, including lnVR (Fig S1 panel A)
 
 The supplemental figures include lnVR (in addition to lnCVR and lnRR, as presented in Figures 4 and 5)
-```{r}
+```{r FigS1_prep}
 # *Prepare data for all traits
 
 meta.plot2.all <- meta_clean %>%
@@ -1626,7 +1626,7 @@ Metameta_FigS1_alltraits <- overall4S %>%
 The analysis for heterogeneity follows the workflow of the above steps for the different meta-analyses. However, in the initial meta-analysis we extract sigma^2 and errors for mouse strains and centers (Institutions). 
 As above a Loop is run and parameters extracted from metafor (sigma2's, s.nlevels)
 
-```{r}
+```{r hetero_loop, message=FALSE, warning=FALSE, include=FALSE }
 # Create dataframe to store results
 results.allhetero.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n * 30), ncol = 30)))
 names(results.allhetero.grouping) <- c(
@@ -1709,7 +1709,7 @@ for (t in 1:n) {
 Exclude traits without variation between mouse strains
 Merge data sets containing metafor results with procedure etc. names. Dealing with correlated parameters, and running of second -order meta-analysis for  heterogeneity data.
 
-```{r}
+```{r hetero}
 results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
 # nrow(results.allhetero.grouping) #232  
 
@@ -2286,7 +2286,7 @@ malebias_Fig2_over10 <-
 #### Female Figure, significant and highly biased traits (Figure S2 B, left hand side panels)
 Preparing data for traits with CI not overlapping 0: 
 create column with 1= different from zero, 0= zero included in CI (for Figure S2 B, top left panel)
-```{r}
+```{r FigS2_B}
 #Restructure data for plotting
 
 overall3.female.sigS <- gather(overall.female.plot3, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
@@ -2567,7 +2567,7 @@ Metameta_Fig3_female.perc <- overall4.perc %>%
 ```
 #### Male Figure, significant and highly biased traits (Figure S2 B, right hand side panels)
 Restructuring data with significant male bias (for Figure S2 B, top right panel)
-```{r}
+```{r FigS2_B_right}
 overall3.male.sigS <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
 
 
@@ -2875,7 +2875,7 @@ tbd
 
 ## R Session Information
 
-```{r}
+```{r Session}
 sessionInfo()
 ```
 
