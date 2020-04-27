@@ -794,6 +794,7 @@ meta.plot2.all.f$GroupingTerm <- factor(meta.plot2.all.f$GroupingTerm, rev(level
 malebias_Fig2_alltraits <-
   ggplot(meta.plot2.all.f) +
   aes(x = GroupingTerm, y = percent, fill = sex) +
+  ylab("Percentage") +
   geom_col() +
   geom_hline(yintercept = 50, linetype = "dashed", color = "gray40") +
   geom_text(
@@ -803,7 +804,7 @@ malebias_Fig2_alltraits <-
   facet_grid(
     cols = vars(trait), rows = vars(label), labeller = label_wrap_gen(width = 18),
     scales = "free", space = "free"
-  ) +
+  ) +  
   scale_fill_brewer(palette = "Set2") +
   theme_bw(base_size = 18) +
   theme(
@@ -818,13 +819,12 @@ malebias_Fig2_alltraits <-
     panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
     panel.grid.minor.y = element_blank(),
     panel.grid.minor.x = element_blank(),
-    legend.position = "none",
-    axis.title.x = element_blank(),
+    legend.position= "none",
+    #axis.title.x = Percentage,
     axis.title.y = element_blank()
   ) +
   coord_flip()
 
-# malebias_Fig2_alltraits     #(panel A in Figure 4 in ms)
 ```
 
 ###  Overall results of second order meta-analysis (Figure 4, Panel B)
@@ -921,7 +921,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Step D (figure 3). Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure 3). Both panels represent results evaluated across all traits (Phase 3, Figure 3). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
 
 ```{r Fig4}
-Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(8, 8), labels = c("A", "B"))
+Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(9, 9), labels = c("A", "B"))
 Fig4
 ```
 
@@ -994,6 +994,7 @@ meta.plot2.sig.bothsexes.c$GroupingTerm <- factor(meta.plot2.sig.bothsexes.c$Gro
 malebias_Fig2_sigtraits <-
   ggplot(meta.plot2.sig.bothsexes.c) +
   aes(x = GroupingTerm, y = percent, fill = sex) +
+  ylab("Percentage") +
   geom_col() +
   geom_hline(yintercept = 50, linetype = "dashed", color = "gray40") +
   geom_text(
@@ -1019,7 +1020,7 @@ malebias_Fig2_sigtraits <-
     panel.grid.minor.y = element_blank(),
     panel.grid.minor.x = element_blank(),
     legend.position = "none",
-    axis.title.x = element_blank(),
+    #axis.title.x = element_blank(),
     axis.title.y = element_blank()
   ) +
   coord_flip()
@@ -1430,10 +1431,16 @@ Sex biases in trait values across trait groups (Step J in Figure 3). The panels 
 
 ```{r Fig5}
 #Joining the Parts:
+
+
   
   Fig5B <- ggarrange(Metameta_Fig3_female.sig, Metameta_Fig3_male.sig,
   ncol = 2, nrow = 1, widths = c(1, 1.20), heights = c(1, 1)
-)
+  )
+
+  Fig5B <- annotate_figure(Fig5B,
+                bottom= text_grob("Effect Size", color = "black", face = "plain", size = 14))  # SUSI NEW
+
 
 Fig5 <- ggarrange(malebias_Fig2_sigtraits, Fig5B,
   ncol = 1, nrow = 2, widths = c(1, 1.10), heights = c(1.10, 1),  labels = c("A", "B")
