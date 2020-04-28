@@ -554,8 +554,8 @@ names(metacombo)[names(metacombo)=="GroupingTerm2"] <- "GroupingTerm"
 metacombo %>%
   group_by(GroupingTerm) %>%
   dplyr::summarize(MeanCVR = mean(lnCVR), MeanVR = mean(lnVR), MeanRR = mean(lnRR))
-```
 
+```
 ### Supplemental Table 3: "Meta-analysis results"
 
 We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
@@ -570,7 +570,8 @@ kable(metacombo, digits = 3) %>%
 ## 3. Second-order meta-analysis for functional groups
 (Section H in Figure 3 in main article)
 
-### Performing meta-analyses (3 for each of the 9 grouping terms: lnCVR, lnVR, lnRR) 
+### Performing meta-analyses 
+Three for each of the 9 grouping terms: lnCVR, lnVR, lnRR
 
 #### Preparation of data
 
@@ -727,10 +728,11 @@ All <- All %>% mutate(GroupingTerm = "All")
 overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology, Hematology, Heart, Hearing, Eye, All) 
 
 ```
-### Supplemental Table 4
-MISSING table descpition. Refer to in ms.
+### Supplemental Table 4: "Meta-analysis on Functional Trait Groups"
+SHINICHI
+This table summarizes our overall meta-analyses on the functional trait group level ("GroupingTerm"). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95% CI's, standard error and I2 values are provided.
 ```{r Table4}
-kable(overall2, , digits = 3) %>%
+kable(overall2, digits = 3) %>%
  kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
 
@@ -1431,8 +1433,9 @@ Metameta_Fig3_female.sig  <- overall4.female.sig %>%
 
 # Metameta_Fig3_female.sig #(Figure 5B left panel)
 ```
-#### Supplemental Table 5
-Table o
+### Supplemental Table 5
+SHINICHI
+This table provides some of the data plotted in Figures 5 and Figure S2. Here, we provide an overview over meta-analysis results performed on traits that were significantly biased to either sex. This table summarizes findings for both sexes and the respective functional trait groups.
 
 ```{r}
 
@@ -1447,14 +1450,14 @@ mf_sig <- mf_sig [, c(1,17,2:16)]
 
 mf_sig <- mf_sig %>% arrange(desc(GroupingTerm))
 
-kable(mf_sig) %>%
+kable(mf_sig, digits = 3) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "300px")
 ```
 
 
 
-####  Figure 5
+###  Figure 5
 Sex biases in trait values across trait groups (Step J in Figure 3). The panels in A show differences in the number of affected traits, in variance (lnCVR) and means (lnRR), where there is a significant difference between the sexes (i.e CI not overlapping zero). Panel B shows results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
 
 ```{r Fig5}
@@ -1478,10 +1481,10 @@ Fig5
 
 
 
-# Supplemental Plots
-## Figure S1 
-### Including lnVR
-### Count data, including lnVR (Fig S1 panel A)
+# Supplemental Plots and Tables
+### Figure S1 
+#### Including lnVR
+#### Count data, including lnVR (Fig S1 panel A)
 
 The supplemental figures include lnVR (in addition to lnCVR and lnRR, as presented in Figures 4 and 5)
 ```{r FigS1_prep}
@@ -2127,12 +2130,26 @@ HeteroS1 <-
 ```
 
 ## Heterogeneity Table and Plot
-### Supplemental Table 5: "Heterogeneity within groups"
- SZ: missing a desciption so far. MISSING!! Also: rearrange table structure, what does this show??
+### Supplemental Table 6: "Heterogeneity within groups"
+SHINICHI
+This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
+
 ```{r}
-kable(heterog6, digits = 3) %>%
+
+het <- heterog6 %>%
+  pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
+  rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
+       lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
+       lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
+       CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
+       VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
+       CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
+  select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
+
+kable(het, digits = 3) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "200px")
+
 ```
 
 
