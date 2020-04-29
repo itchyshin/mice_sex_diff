@@ -923,7 +923,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
 Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Step D (figure 3). Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure 3). Both panels represent results evaluated across all traits (Phase 3, Figure 3). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
 
 ```{r Fig4}
-Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(9, 9), labels = c("A", "B"))
+Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(10, 9), labels = c("A", "B"))
 Fig4
 ```
 
@@ -2160,7 +2160,7 @@ Similar to Figure 4 in the main article, this figure shows the numbers of either
 ```{r FigS1, fig.height = 8, fig.width = 7}
 #### Combined Figure S1: overall Count data, Meta anlysis results, Heterogeneity
 
-FigS1 <- ggarrange(malebias_FigS1_alltraits, Metameta_FigS1_alltraits, HeteroS1, nrow = 3, align = "v", heights = c(1, 1, 1), labels = c("A", "B", "C"))
+FigS1 <- ggarrange(malebias_FigS1_alltraits, Metameta_FigS1_alltraits, HeteroS1, nrow = 3, align = "v", heights = c(1.1, 1, 1), labels = c("A", "B", "C"))
 FigS1
 #ggsave("FigS1_OverallResults.pdf", plot = FigS1, width = 6, height = 7)
 ```
@@ -2908,10 +2908,10 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 ### Figure S2
 
 This figure is an extension of sex biases, as shown in Figure 5 in the main text. Here, we include data on lnVR (middle panel), as well as athe second method of sex-differences comparison. The panels in A show differences in numbers of affected traits, in variance (lnCVR and lnVR) and means (lnRR), where there’s a significant difference between the sexes (i.e CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
-```{r FigS2, fig.height = 8, fig.width = 7}
+```{r FigS2, fig.height = 10, fig.width = 8}
 library(ggpubr)
 FigS2b <- ggarrange(Metameta_FigS2_female.sig, Metameta_FigS2_male.sig,
-  ncol = 2, nrow = 1, widths = c(1, 1.30), heights = c(1, 1)
+  ncol = 2, nrow = 1, widths = c(1, 1.30), heights = c(1.2, 1.2)
 )
 
 FigS2d <- ggarrange(Metameta_Fig3_female.perc, Metameta_Fig3_male.perc,
@@ -2919,9 +2919,8 @@ FigS2d <- ggarrange(Metameta_Fig3_female.perc, Metameta_Fig3_male.perc,
 )
 
 # end combination Figure 5
-FigS2 <- ggarrange(malebias_FigS2_sigtraits, malebias_Fig2_over10, FigS2b, FigS2d, ncol = 1, nrow = 4, heights = c(2.4, 2.1, 2.1, 2), labels = c("A", " ", "B", " "))
+FigS2 <- ggarrange(malebias_FigS2_sigtraits, malebias_Fig2_over10, FigS2b, FigS2d, ncol = 1, nrow = 4, heights = c(2.5, 2.2, 2.1, 2), labels = c("A", " ", "B", " "))
 FigS2
-#ggsave("FigS2_Bias.pdf", plot = FigS2, width = 7, height = 8)
 ```
 
 
