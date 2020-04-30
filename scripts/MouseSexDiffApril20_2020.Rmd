@@ -27,10 +27,7 @@ always_allow_html: yes
 ---
 
 # Set-up
-
-## Loading packages & custom functions
-
-## Packages
+## 1. Packages
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(
@@ -61,7 +58,7 @@ library(png)
 library(grid)
 ```
 
-## Functions 
+## 2. Functions 
 Functions needed for preparing the data for meta analyses
 
 ### 1) Sub-setting data
@@ -86,7 +83,7 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
   }
 ```
 
-### 2) "Population statistics"
+### 2) Population statistics
 Create a function called: "calculate_population_stats"
 This function groups animals from the same strain and institution together. This is done for each trait separately, and only for traits that have been measured in both sexes. Any group containing fewer than 5 individuals is excluded.
 
@@ -186,7 +183,8 @@ calculate_var_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 }
 ```
 
-## Load & clean data
+
+## 3. Load & clean data
 
 ### 1) Data loading and cleaning of the csv file
 
@@ -294,7 +292,7 @@ procedures <- read_csv(here("data", "procedures.csv"))
 ## 1. Population as analysis unit 
 (Step C, Figure 3 in main document)
 
-### Loop: Meta-analyses on all traits
+### 1.1: Loop: Meta-analyses on all traits
 
 * The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
 * Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
@@ -356,7 +354,7 @@ Similarly, there are 8 traits with very low variation, which can not be excluded
 The produced "Warnings" indicate cases where variance components are set to zero during likelihood optimization.
 
 
-### Merging datasets & removal of non-converged traits
+### 1.2: Merging datasets & removal of non-converged traits
 
 Procedure names, grouping variables and trait names ("parameter_names") are merged back together with the results from the metafor analysis above.
  
@@ -390,18 +388,16 @@ Not converged: "dp t cells", "mzb (cd21/35 high)"
 
 Not enough variation: "number of caudal vertebrae", "number of cervical vertebrae", "number of digits", "number of lumbar vertebrae", "number of pelvic vertebrae", "number of ribs left","number of ribs right", "number of signals", "number of thoracic vertebrae", "total number of acquired events in panel a","total number of acquired events in panel b", "whole arena permanence".
 
+
 ## 2. Meta-analysis: condensing non-independent traits 
 (Step F in Figure 3 in main article)
 
-### Dealing with Correlated Parameters, preparation
+### 2.1: Dealing with Correlated Parameters, preparation
 
 This dataset contained a number of highly correlated traits, such as different kinds of cell counts (for example hierarchical parameterization within immunological assays). As those data-points are not independent of each other,  we conducted meta analyses on these correlated parameters to collapse the number of levels.
 
-#### Collapsing and merging correlated parameters
-Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size)
-
-### Supplemental Table 2: "Numbers of correlated and uncorrelated traits"
-This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
+### 2.2: Collapsing and merging correlated parameters, preparation for Table S2
+Count the number of parameter names (correlated sub-traits) in each parameter group (par_group_size). This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation.
 
 ```{r Table2_Meta1}
 # Here we double check numbers of trait parameters in the dataset
@@ -420,15 +416,9 @@ meta1_sub <- meta1 %>%
   # Create subsets with > 1 count (par_group_size > 1)
   filter(par_group_size > 1) # 90 observations
 
-# Table detailing numbers of correlated and uncorrelated traits
-kable(cbind(meta1 %>% count(parameter_group))) %>%
-  kable_styling() %>%
-  scroll_box(width = "60%", height = "200px")
-
-
 ```
 
-#### Meta-analyses on correlated (sub-)traits, using robumeta` 
+### 2.3: Meta-analyses on correlated (sub-)traits, using `robumeta` 
 Here we pepare the subset of the data (using nest()), and in this first step the model of the meta-analysis effect sizes are calculated
 
 ```{r corrTraits}
@@ -535,10 +525,9 @@ metacombo %>%
 ## 3. Second-order meta-analysis for functional groups
 (Section H in Figure 3 in main article)
 
-### Performing meta-analyses 
+### 3.1: Performing meta-analyses 
 Three for each of the 9 grouping terms: lnCVR, lnVR, lnRR
-
-#### Preparation of data
+#### 3.1.1: Preparing the data
 
 Nesting, calculating the number of parameters within each grouping term, and running the meta-analyses
 
@@ -595,7 +584,7 @@ overall_all1 <- metacombo_final_all %>%
   )
 ```
 
-### Re-structuring the data for each grouping term
+#### 3.1.2: Re-structuring the data for each grouping term
 We here delete unused variables, and select the respective effect sizes. Please note - the referencing of the cells does NOT depend on previous ordering of the data. This would only be affected if the output structure from metafor::rma.uni changes. 
 
 ```{r MetaGroup_extraction}
@@ -693,19 +682,13 @@ All <- All %>% mutate(GroupingTerm = "All")
 overall2 <- bind_rows(Behaviour, Morphology, Metabolism, Physiology, Immunology, Hematology, Heart, Hearing, Eye, All) 
 
 ```
-### Supplemental Table 4: "Meta-analysis on Functional Trait Groups"
-SHINICHI
-This table summarizes our overall meta-analyses on the functional trait group level ("GroupingTerm"). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95% CI's, standard error and I2 values are provided.
-```{r Table4}
-kable(overall2, digits = 3) %>%
- kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
 
-```
 
-# Visualisation
-## Preparation for Figure 4 
-#### Count data, based on First-order meta-analysis results
+
+
+# Visualising meta-analysis results
+## 1. Preparation for Figure 4 
+#### 1.1: Count data, based on First-order meta-analysis results
 This includes all separate eligible traits.
 Re-ordering of grouping terms. 
 Preparation of subplot 4A
@@ -794,8 +777,8 @@ malebias_Fig2_alltraits <-
 
 ```
 
-###  Overall results of second order meta-analysis (Figure 4, Panel B)
-#### Re-structure data for plotting 
+#### 1.2: Overall results of second order meta-analysis (Figure 4, Panel B)
+#### 1.3: Re-structure data for plotting 
 Data are re-structured, and grouping terms are being re-ordered
 
 ```{r Fig4_B}
@@ -883,7 +866,8 @@ Metameta_Fig3_alltraits <- overall4 %>%
 #Metameta_Fig3_alltraits
 ```
 
-### Figure 4
+
+## 2. Figure 4
 
 Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Step D (figure 3). Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure 3). Both panels represent results evaluated across all traits (Phase 3, Figure 3). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
 
@@ -893,8 +877,9 @@ Fig4
 ```
 
 
-## Preparation for Figure 5: Sex bias.
-#### Preparing data for traits with CI not overlapping 0
+
+## 3. Preparation for Figure 5
+#### 3.1: Preparing data for traits with CI not overlapping 0
 To further investigate sex bias in this dataset, and in particular if the extent of sex bias differs between traits, we investigate the magnitude of male- and female bias in significantly different traits on (both for means and variability)
 
 To do this, we select only traits that have CIs that do not overlap with zero.
@@ -1399,7 +1384,7 @@ Metameta_Fig3_female.sig  <- overall4.female.sig %>%
 # Metameta_Fig3_female.sig #(Figure 5B left panel)
 ```
 
-###  Figure 5
+## 4. Figure 5
 Sex biases in trait values across trait groups (Step J in Figure 3). The panels in A show differences in the number of affected traits, in variance (lnCVR) and means (lnRR), where there is a significant difference between the sexes (i.e CI not overlapping zero). Panel B shows results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
 
 ```{r Fig5}
@@ -1423,89 +1408,108 @@ Fig5
 
 
 
-# Supplemental Plots and Tables
 
-### Supplemental Table S1: "Strains and Center Sample Sizes"
-This table summarises the available numbers of male and female mice from each strain and originating institution.
+# Supplemental Tables and Figures
 
-```{r Table1_prep, include=FALSE}
-# Initial checks
-length(unique(data$parameter_name)) # 232 traits
-length(unique(data$parameter_group)) # 161 parameter groups
-length(unique(data$procedure_name)) # 26 procedure groups
-length(unique(data$biological_sample_id)) # 27147 individial mice  
-# To show a table with number of males and females per strain per production center:
+## Supplemental Tables
+#### 1. Supplemental Table S1: "Strains and Center Sample Sizes"
+  This table summarises the available numbers of male and female mice from each strain and originating institution.
 
-ST1 <- (cbind(data %>% group_by(production_center, strain_name) %>% count(biological_sample_id, sex) %>% count(sex) %>% print(n = Inf))) 
+```{r Table1_prep}
+  # Initial checks
+  length(unique(data$parameter_name)) # 232 traits
+  length(unique(data$parameter_group)) # 161 parameter groups
+  length(unique(data$procedure_name)) # 26 procedure groups
+  length(unique(data$biological_sample_id)) # 27147 individial mice  
+  # To show a table with number of males and females per strain per production center:
+
+  ST1 <- (cbind(data %>% group_by(production_center, strain_name) %>% count(biological_sample_id, sex) %>% count(sex) %>% print(n = Inf))) 
 ```
-
 ```{r Table1}
 
-kable(ST1) %>%
+  kable(ST1) %>%
+    kable_styling() %>%
+    scroll_box(width = "60%", height = "200px")
+
+```
+
+#### 2. Supplemental Table S2: "Numbers of correlated and uncorrelated traits"
+
+```{r, TableS2}  
+# Table detailing numbers of correlated and uncorrelated traits
+kable(cbind(meta1 %>% count(parameter_group))) %>%
   kable_styling() %>%
   scroll_box(width = "60%", height = "200px")
-
 ```
 
-### Supplemental Table S3: "Meta-analysis results"
+#### 3. Supplemental Table S3: "Meta-analysis results"
 
-We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
+  We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
 
 ```{r Table3}
-  kable(metacombo, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
+    kable(metacombo, digits = 3) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "200px")
 
 ```
 
-### Supplemental Table S5: "Sex-biased effect sizes"
-SHINICHI
-This table provides some of the data plotted in Figures 5 and Figure S2. Here, we provide an overview over meta-analysis results performed on traits that were significantly biased to either sex. This table summarizes findings for both sexes and the respective functional trait groups.
+#### 4. Supplemental Table S4: "Meta-analysis on Functional Trait Groups"
+  SHINICHI
+  This table summarizes our overall meta-analyses on the functional trait group level ("GroupingTerm"). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95% CI's, standard error and I2 values are provided.
+```{r Table4}
+  kable(overall2, digits = 3) %>%
+   kable_styling() %>%
+  scroll_box(width = "100%", height = "200px")
+```
+
+#### 5. Supplemental Table S5: "Sex-biased effect sizes"
+  SHINICHI
+  This table provides some of the data plotted in Figures 5 and Figure S2. Here, we provide an overview over meta-analysis results performed on traits that were significantly biased to either sex. This table summarizes findings for both sexes and the respective functional trait groups.
 
 ```{r}
 
-female <- (overall.female.plot3)
-female$Sex <- c("female")
-           
-male <- (overall.male.plot3)
-male$Sex <- c("male")
+  female <- (overall.female.plot3)
+  female$Sex <- c("female")
+             
+  male <- (overall.male.plot3)
+  male$Sex <- c("male")
 
-mf_sig <- rbind(female,male)
-mf_sig <- mf_sig [, c(1,17,2:16)] 
+  mf_sig <- rbind(female,male)
+  mf_sig <- mf_sig [, c(1,17,2:16)] 
 
-mf_sig <- mf_sig %>% arrange(desc(GroupingTerm))
+  mf_sig <- mf_sig %>% arrange(desc(GroupingTerm))
 
-kable(mf_sig, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "300px")
+  kable(mf_sig, digits = 3) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
 ```
 
-### Supplemental Table S6: "Heterogeneity within groups"
-SHINICHI
-This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
+#### 6. Supplemental Table S6: "Heterogeneity within groups"
+  SHINICHI
+  This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
 
 ```{r}
 
-het <- heterog6 %>%
-  pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
-  rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
-       lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
-       lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
-       CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
-       VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
-       CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
-  select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
+  het <- heterog6 %>%
+    pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
+    rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
+         lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
+         lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
+         CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
+         VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
+         CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
+    select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
 
-kable(het, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
+  kable(het, digits = 3) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "200px")
 
 ```
 
-### Figure S1 
-#### Including lnVR
-#### Count data, including lnVR (Fig S1 panel A)
 
+## Supplemental Figures
+### 1. Preparation for Figure S1
+#### 1.1: Preparing the data
 The supplemental figures include lnVR (in addition to lnCVR and lnRR, as presented in Figures 4 and 5)
 ```{r FigS1_prep}
 # *Prepare data for all traits
@@ -1681,7 +1685,7 @@ Metameta_FigS1_alltraits <- overall4S %>%
 # Metameta_FigS1_alltraits
 ```
 
-### Heterogeneity
+#### 1.2: Preparing heterogeneity
 The analysis for heterogeneity follows the workflow of the above steps for the different meta-analyses. However, in the initial meta-analysis we extract sigma^2 and errors for mouse strains and centers (Institutions). 
 As above a Loop is run and parameters extracted from metafor (sigma2's, s.nlevels)
 
@@ -2151,7 +2155,7 @@ HeteroS1 <-
 
 
 
-### Figure S1
+### 2. Figure S1
 
 Similar to Figure 4 in the main article, this figure shows the numbers of either male (blue-green bars) or female (orange-red bars) biased traits  (Panel A) across functional groups, this time for lnCVR (left hand side), lnVR (middle) and lnRR (right hand side). Panel B shows effect sizes from separate meta-analysis for each functional group, and Panel C contains results of heterogeneity analyses. All three panels represent results evaluated across all traits (Phase 3, Figure 3). 
 
@@ -2163,7 +2167,8 @@ FigS1
 #ggsave("FigS1_OverallResults.pdf", plot = FigS1, width = 6, height = 7)
 ```
 
-### Preparations for Figure S2 A
+### 3. Preparation for Figure S2
+#### 3.1: Preparation for Figure S2 A
 This Figure extends Figure 4, as it includes results not only for lnCVR and lnRR but also lnCVR. In addition, we compare two different assessments of sex-bias, significance (CI not overlapping zero) and sex differences in male / female ratios > 10%
 ```{r}
 # Plot FigS2 all significant results (CI not overlapping zero) for males, count data
@@ -2335,8 +2340,8 @@ malebias_Fig2_over10 <-
 # malebias_Fig2_over10  (supplemental Figure S2 A)
 ```
 
-### Preparation for Figure S2 B (second-order meta-analysis)
-#### Female Figure, significant and highly biased traits (Figure S2 B, left hand side panels)
+#### 3.2: Preparation for Figure S2 B (second-order meta-analysis)
+#### 3.3: Female Figure, significant and highly biased traits (Figure S2 B, left hand side panels)
 Preparing data for traits with CI not overlapping 0: 
 create column with 1= different from zero, 0= zero included in CI (for Figure S2 B, top left panel)
 ```{r FigS2_B}
@@ -2618,7 +2623,7 @@ Metameta_Fig3_female.perc <- overall4.perc %>%
 
 # Metameta_Fig3_female.perc (Figure S2 bottom left panel)
 ```
-#### Male Figure, significant and highly biased traits (Figure S2 B, right hand side panels)
+#### 3.4: Male Figure, significant and highly biased traits (Figure S2 B, right hand side panels)
 Restructuring data with significant male bias (for Figure S2 B, top right panel)
 ```{r FigS2_B_right}
 overall3.male.sigS <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnVR, lnRR), factor_key = TRUE)
@@ -2903,7 +2908,7 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 
 
 
-### Figure S2
+### 4. Figure S2
 
 This figure is an extension of sex biases, as shown in Figure 5 in the main text. Here, we include data on lnVR (middle panel), as well as athe second method of sex-differences comparison. The panels in A show differences in numbers of affected traits, in variance (lnCVR and lnVR) and means (lnRR), where there’s a significant difference between the sexes (i.e CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
 ```{r FigS2, fig.height = 10, fig.width = 8}
@@ -2922,8 +2927,6 @@ FigS2
 ```
 
 
-## Acknowledgements
-tbd
 
 ## R Session Information
 
