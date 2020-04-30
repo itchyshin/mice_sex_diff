@@ -56,16 +56,16 @@ library(robumeta)
 library(ggpubr)
 library(ggplot2)
 library(here)
-# additional packages for intergating male / female symbols in plot 4
+# additional packages for incorporating male / female symbols in plot 4
 library(png)
 library(grid)
 ```
 
 ## Functions 
-for preparing the data for meta analyses
+Functions needed for preparing the data for meta analyses
 
-### 1) Subsetting data
-Create function for sub-setting the data to choose only one data point per individual per trait: "data_subset_parameterid_individual_by_age"
+### 1) Sub-setting data
+Create a function for sub-setting the data to choose only one data point per individual per trait: "data_subset_parameterid_individual_by_age"
 
 ```{r}
 data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min=0, age_center=100) {
@@ -87,8 +87,8 @@ data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min
 ```
 
 ### 2) "Population statistics"
-Create function called: "calculate_population_stats"
-This function groups animals from the same strain and same insitiution together. This is done for each trait seoarately, and only for traits that have been measured in both sexes. Any group containing fewer than 5 individuals is excluded.
+Create a function called: "calculate_population_stats"
+This function groups animals from the same strain and institution together. This is done for each trait separately, and only for traits that have been measured in both sexes. Any group containing fewer than 5 individuals is excluded.
 
 ```{r PopStatsFunction}
 calculate_population_stats <- function(mydata, min_individuals = 5) {
@@ -98,15 +98,12 @@ calculate_population_stats <- function(mydata, min_individuals = 5) {
       trait = parameter_name[1],
       x_bar = mean(data_point),
       x_sd = sd(data_point),
-      n_ind = n()
-    ) %>%
+      n_ind = n()) %>%
     ungroup() %>%
     filter(n_ind > min_individuals) %>%
     # Check both sexes present & filter those missing
     group_by(population) %>%
-    mutate(
-      n_sex = n_distinct(sex)
-    ) %>%
+    mutate(n_sex = n_distinct(sex)) %>%
     ungroup() %>%
     filter(n_sex == 2) %>%
     select(-n_sex) %>%
@@ -193,7 +190,7 @@ calculate_var_lnRR <- function(CMean, CSD, CN, EMean, ESD, EN) {
 
 ### 1) Data loading and cleaning of the csv file
 
-This step we have already done and provide a cleaned up file which is less computing intensive and which we have saved in a folder called `export`. However, the cvs is provided in case this is preferred to be attempted, following the steps below: [This code is currently excluded from showing in this html file, but can be viewed and enabled / run in the downloadable .rmd file. However, it requires the .gz file containing the raw data in the "export" folder. Unfortuntaltely, that file can not be provided via github, as is too large (274MB). It is freely accessible, uploaded on zenodo.org (https://zenodo.org/deposit/3759701)
+We have already done this step and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. However, the `.csv` is provided in case this is preferred and can be imported and processed using following the steps below: [This code is currently excluded from showing in this `.html` file, but can be viewed and enabled / run in the down-loadable .rmd file. However, it requires the .gz file containing the raw data in the "export" folder. Unfortunately, that file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to zenodo.org (https://zenodo.org/deposit/3759701)
 
 ```{r clean, eval=FALSE, include=FALSE}
 # loads the raw data, setting some default types for various columns
@@ -292,28 +289,6 @@ procedures <- read_csv(here("data", "procedures.csv"))
 
 ```
 
-
-### Supplemental Table 1: "Strains and Center Sample Sizes"
-This table summarises the available numbers of male and female mice from each strain and originating institution.
-
-```{r Table1_prep, include=FALSE}
-# Initial checks
-length(unique(data$parameter_name)) # 232 traits
-length(unique(data$parameter_group)) # 161 parameter groups
-length(unique(data$procedure_name)) # 26 procedure groups
-length(unique(data$biological_sample_id)) # 27147 individial mice  
-# To show a table with number of males and females per strain per production center:
-
-ST1 <- (cbind(data %>% group_by(production_center, strain_name) %>% count(biological_sample_id, sex) %>% count(sex) %>% print(n = Inf))) 
-```
-
-```{r Table1}
-
-kable(ST1) %>%
-  kable_styling() %>%
-  scroll_box(width = "60%", height = "200px")
-
-```
 
 # Meta-analyses
 ## 1. Population as analysis unit 
@@ -554,16 +529,6 @@ names(metacombo)[names(metacombo)=="GroupingTerm2"] <- "GroupingTerm"
 metacombo %>%
   group_by(GroupingTerm) %>%
   dplyr::summarize(MeanCVR = mean(lnCVR), MeanVR = mean(lnVR), MeanRR = mean(lnRR))
-
-```
-### Supplemental Table 3: "Meta-analysis results"
-
-We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
-
-```{r Table3}
-kable(metacombo, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
 
 ```
 
@@ -1433,29 +1398,6 @@ Metameta_Fig3_female.sig  <- overall4.female.sig %>%
 
 # Metameta_Fig3_female.sig #(Figure 5B left panel)
 ```
-### Supplemental Table 5
-SHINICHI
-This table provides some of the data plotted in Figures 5 and Figure S2. Here, we provide an overview over meta-analysis results performed on traits that were significantly biased to either sex. This table summarizes findings for both sexes and the respective functional trait groups.
-
-```{r}
-
-female <- (overall.female.plot3)
-female$Sex <- c("female")
-           
-male <- (overall.male.plot3)
-male$Sex <- c("male")
-
-mf_sig <- rbind(female,male)
-mf_sig <- mf_sig [, c(1,17,2:16)] 
-
-mf_sig <- mf_sig %>% arrange(desc(GroupingTerm))
-
-kable(mf_sig, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "300px")
-```
-
-
 
 ###  Figure 5
 Sex biases in trait values across trait groups (Step J in Figure 3). The panels in A show differences in the number of affected traits, in variance (lnCVR) and means (lnRR), where there is a significant difference between the sexes (i.e CI not overlapping zero). Panel B shows results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
@@ -1482,6 +1424,84 @@ Fig5
 
 
 # Supplemental Plots and Tables
+
+### Supplemental Table S1: "Strains and Center Sample Sizes"
+This table summarises the available numbers of male and female mice from each strain and originating institution.
+
+```{r Table1_prep, include=FALSE}
+# Initial checks
+length(unique(data$parameter_name)) # 232 traits
+length(unique(data$parameter_group)) # 161 parameter groups
+length(unique(data$procedure_name)) # 26 procedure groups
+length(unique(data$biological_sample_id)) # 27147 individial mice  
+# To show a table with number of males and females per strain per production center:
+
+ST1 <- (cbind(data %>% group_by(production_center, strain_name) %>% count(biological_sample_id, sex) %>% count(sex) %>% print(n = Inf))) 
+```
+
+```{r Table1}
+
+kable(ST1) %>%
+  kable_styling() %>%
+  scroll_box(width = "60%", height = "200px")
+
+```
+
+### Supplemental Table S3: "Meta-analysis results"
+
+We use this corrected (for correlated traits) "results" table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance. 
+
+```{r Table3}
+  kable(metacombo, digits = 3) %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "200px")
+
+```
+
+### Supplemental Table S5: "Sex-biased effect sizes"
+SHINICHI
+This table provides some of the data plotted in Figures 5 and Figure S2. Here, we provide an overview over meta-analysis results performed on traits that were significantly biased to either sex. This table summarizes findings for both sexes and the respective functional trait groups.
+
+```{r}
+
+female <- (overall.female.plot3)
+female$Sex <- c("female")
+           
+male <- (overall.male.plot3)
+male$Sex <- c("male")
+
+mf_sig <- rbind(female,male)
+mf_sig <- mf_sig [, c(1,17,2:16)] 
+
+mf_sig <- mf_sig %>% arrange(desc(GroupingTerm))
+
+kable(mf_sig, digits = 3) %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "300px")
+```
+
+### Supplemental Table S6: "Heterogeneity within groups"
+SHINICHI
+This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
+
+```{r}
+
+het <- heterog6 %>%
+  pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
+  rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
+       lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
+       lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
+       CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
+       VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
+       CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
+  select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
+
+kable(het, digits = 3) %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "200px")
+
+```
+
 ### Figure S1 
 #### Including lnVR
 #### Count data, including lnVR (Fig S1 panel A)
@@ -2129,28 +2149,6 @@ HeteroS1 <-
   )
 ```
 
-## Heterogeneity Table and Plot
-### Supplemental Table 6: "Heterogeneity within groups"
-SHINICHI
-This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
-
-```{r}
-
-het <- heterog6 %>%
-  pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
-  rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
-       lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
-       lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
-       CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
-       VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
-       CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
-  select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
-
-kable(het, digits = 3) %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
-
-```
 
 
 ### Figure S1
