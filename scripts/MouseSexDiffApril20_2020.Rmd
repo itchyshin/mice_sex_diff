@@ -1483,27 +1483,7 @@ kable(cbind(meta1 %>% count(parameter_group))) %>%
     scroll_box(width = "100%", height = "300px")
 ```
 
-#### 6. Supplemental Table S6: "Heterogeneity within groups"
-  SHINICHI
-  This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
 
-```{r}
-
-  het <- heterog6 %>%
-    pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
-    rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
-         lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
-         lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
-         CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
-         VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
-         CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
-    select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
-
-  kable(het, digits = 3) %>%
-    kable_styling() %>%
-    scroll_box(width = "100%", height = "200px")
-
-```
 
 
 ## Supplemental Figures
@@ -2151,7 +2131,27 @@ HeteroS1 <-
     axis.title.y = element_blank()
   )
 ```
+#### 6. Supplemental Table S6: "Heterogeneity within groups"
+  SHINICHI
+  This table summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above. 
 
+```{r}
+
+  het <- heterog6 %>%
+    pivot_wider(names_from = parameter, values_from = value:ci.h) %>%
+    rename(lnCVR = value_heteroCVR, lnCVR_lower = ci.low_heteroCVR, lnCVR_higher = ci.high_heteroCVR, 
+         lnVR = value_heteroVR, lnVR_lower = ci.low_heteroVR, lnVR_higher = ci.high_heteroVR, 
+         lnRR = value_heteroRR, lnRR_lower = ci.low_heteroRR, lnRR_higher = ci.high_heteroRR,
+         CVR = mean_heteroCVR, VR = mean_heteroVR, RR = mean_heteroRR,  CVR_lower = ci.l_heteroCVR, 
+         VR_lower = ci.l_heteroVR, RR_lower = ci.l_heteroRR, 
+         CVR_higher = ci.h_heteroCVR, VR_higher = ci.h_heteroVR, RR_higher = ci.h_heteroRR) %>%
+    select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
+
+  kable(het, digits = 3) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "200px")
+
+```
 
 
 ### 2. Figure S1

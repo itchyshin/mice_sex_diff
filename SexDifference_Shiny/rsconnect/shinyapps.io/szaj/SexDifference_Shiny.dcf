@@ -1,0 +1,13 @@
+name: SexDifference_Shiny
+title: SexDifference_Shiny
+username:
+account: szaj
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1900798
+bundleId: 3090384
+url: https://szaj.shinyapps.io/SexDifference_Shiny/
+when: 1588344004.68893
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: www/008169.png

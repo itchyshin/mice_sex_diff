@@ -44,7 +44,7 @@ ui <- fluidPage(mainPanel(theme = shinythemes::themeSelector()),
    ),
   
     mainPanel(
-        tags$img(src = "008169.png", width = 580, height =340)
+        tags$img(src = "PCWmice1.jpg", width = 220, height =120 )
        ) 
     )    
 
@@ -61,7 +61,7 @@ server <- function(input, output){
         
         # Calculate percent diff
             perc_difference <- ifelse(odds_ratio < 1, (1-odds_ratio)*100, (odds_ratio-1)*100)
-            direct <- ifelse(odds_ratio < 1, "Males >", "Females >") 
+            direct <- ifelse(odds_ratio < 1, "Females >", "Males >") 
             
         # Table output
             table <- rbind(paste0(round(perc_difference, digits = 2), " %"), direct)
@@ -81,7 +81,7 @@ server <- function(input, output){
       
       # Calculate percent diff
       perc_difference <- ifelse(odds_ratio < 1, (1-odds_ratio)*100, (odds_ratio-1)*100)
-      direct <- ifelse(odds_ratio < 1, "Males >", "Females >") 
+      direct <- ifelse(odds_ratio < 1, "Females >", "Males >") 
       
       # Table output
       table <- rbind(paste0(round(perc_difference, digits = 2), " %"), direct)
@@ -101,7 +101,7 @@ server <- function(input, output){
       
       # Calculate percent diff
       perc_difference <- ifelse(odds_ratio < 1, (1-odds_ratio)*100, (odds_ratio-1)*100)
-      direct <- ifelse(odds_ratio < 1, "Males >", "Females >") 
+      direct <- ifelse(odds_ratio < 1, "Females >", "Males >") 
       
       # Table output
       table <- rbind(paste0(round(perc_difference, digits = 2), " %"), direct)
