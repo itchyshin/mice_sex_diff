@@ -287,7 +287,6 @@ procedures <- read_csv(here("data", "procedures.csv"))
 
 ```
 
-
 # Meta-analyses
 ## 1. Population as analysis unit 
 (Step C, Figure 3 in main document)
