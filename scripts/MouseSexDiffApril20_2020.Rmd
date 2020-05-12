@@ -90,11 +90,13 @@ This function groups animals from the same strain and institution together. This
 ```{r PopStatsFunction}
 calculate_population_stats <- function(mydata, min_individuals = 5) {
   mydata %>%
-    group_by(population, strain_name, production_center, sex) %>%
-    summarise(
-      trait = parameter_name[1],
-      x_bar = mean(data_point),
-      x_sd = sd(data_point),
+    group_by(population, 
+             strain_name, 
+             production_center, 
+             sex) %>%
+    summarise(trait = parameter_name[1],
+              x_bar = mean(data_point),
+              x_sd = sd(data_point),
       n_ind = n()) %>%
     ungroup() %>%
     filter(n_ind > min_individuals) %>%
@@ -106,12 +108,65 @@ calculate_population_stats <- function(mydata, min_individuals = 5) {
     select(-n_sex) %>%
     arrange(production_center, strain_name, population, sex)
 }
+
+multi_spread <- function(df, key, value) {
+    # quote key
+    keyq <- rlang::enquo(key)
+    # break value vector into quotes
+    valueq <- rlang::enquo(value)
+    s <- rlang::quos(!!valueq)
+    df %>% gather(variable, value, !!!s) %>%
+        unite(temp, !!keyq, variable) %>%
+        spread(temp, value)
+}
+
+
+# Will calculate population stats and exclude data that is irrelevant and not useful, it will also just convert the data straight away to wide format as opposed to long, which I think is making things more complicated when effect sizes are calculated. 
+
+calculate_population_stats_new <- function(mydata, min_individuals = 5){
+    mydata %>% 
+    group_by(population,
+             production_center,  
+             strain_name,  
+             sex) %>%
+    summarise(trait  = parameter_name[1],
+              x_bar  = mean(data_point, na.rm = TRUE),
+              x_sd   =   sd(data_point, na.rm = TRUE),
+              n_ind  = n()) %>%
+    ungroup() %>%
+    filter(n_ind > min_individuals) %>%   # NOTE here that you are excluding data with 5 exactly....
+    group_by(population) %>%
+    filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
+    multi_spread(sex, c(x_bar, x_sd, n_ind))      # Spreads the data out into wide format, so sexes are beside each other which is more typical of meta-analytic data
+}
+
 ```
 
 ### 3) Extraction of effect sizes and sample variances
 Function: "create_meta_analysis_effect_sizes"
 
 ```{r EffectSizeFunction}
+
+#This function should mostly replace the entire function below, but I am still not quite sure what is happening in places. Adding all effect sizes together (maintaining the naming), err seems to be added to each trait? That needs to be added.It will make use of escalc which has the correct equations for effect size calculations.
+create_meta_analysis_effect_sizes_new <- function(mydata, measure = c("CVR", "VR", "ROM")){
+  for(i in 1:length(measure)){
+    mydata <- metafor::escalc(m1i  = female_x_bar, 
+                              m2i  = male_x_bar, 
+                              sd1i = female_x_sd, 
+                              sd2i = male_x_sd, 
+                              n1i  = female_n_ind, 
+                              n2i  = male_n_ind, 
+                              data = mydata, 
+                           measure = measure[i], 
+                         var.names = c(paste0("effect_size_", measure[i]), 
+                                      paste0("sample_variance_", measure[i])),
+                            append = TRUE)
+    }
+    return(mydata)
+}
+
+
+## Can delete all the below ###### The above function does same thing, but uses simplified dataset and also reorganises it so no need for input dataframe. This also means we can remove the next section with Al's function as escalc has these built in anyway.
 create_meta_analysis_effect_sizes <- function(mydata) {
   i <- seq(1, nrow(mydata), by = 2)
   input <- data.frame(
@@ -134,6 +189,7 @@ create_meta_analysis_effect_sizes <- function(mydata) {
       sample_variance_RR = calculate_var_lnRR(CMean = input$x1i, CSD = input$sd1i, CN = input$n1i, EMean = input$x2i, ESD = input$sd2i, EN = input$n2i),
       err = as.factor(seq_len(n()))
     )
+
 }
 ```
 
@@ -302,23 +358,36 @@ n <- length(unique(data$id))
 
 # Create dataframe to store results
 results_alltraits_grouping <- 
-    tibble(id = 1:n, lnCVR=0, lnCVR_lower=0, lnCVR_upper=0, 
-           lnCVR_se=0, lnVR=0, lnVR_lower=0, lnVR_upper=0, 
-           lnVR_se=0, lnRR=0, lnRR_lower=0, lnRR_upper=0, lnRR_se=0, sampleSize=0, trait=0)
+    tibble(id = 1:n, 
+           lnCVR=0, lnCVR_lower=0, lnCVR_upper=0,lnCVR_se=0, 
+            lnVR=0,  lnVR_lower=0,  lnVR_upper=0, lnVR_se=0, 
+            lnRR=0,  lnRR_lower=0,  lnRR_upper=0, lnRR_se=0, 
+           sampleSize=0, trait=0)
 
 for (t in 1:n) {
   tryCatch(
     {
-      results <- data %>% 
+
+    #NOTE: results and results 2 should now be equivalent and produce the same thing except that results 2 has the columns added in with raw effect sizes, which I think is wise if we can keep them. Otherwise, the naming should be the same. I've checked quite a few t's and all looks the same. results 2 just has more columns.
+      results <- data.frame(data %>% 
         data_subset_parameterid_individual_by_age(t) %>%
         calculate_population_stats() %>%
-        create_meta_analysis_effect_sizes()
+        create_meta_analysis_effect_sizes())
+
+      results2 <- data %>%
+       data_subset_parameterid_individual_by_age(t) %>%
+       calculate_population_stats_new() %>%
+       create_meta_analysis_effect_sizes_new() %>%
+       mutate(err = seq_len(n()))
 
       # lnCVR,  log repsonse-ratio of the coefficient of variance
       cvr <- metafor::rma.mv(yi = effect_size_CVR, V = sample_variance_CVR, 
                              random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
-                             control = list(optimizer = "optim", optmethod = "Nelder-Mead", 
-                                            maxit = 1000), verbose = F, data = results)
+                             control = list(optimizer = "optim", 
+                                            optmethod = "Nelder-Mead", 
+                                            maxit = 1000), 
+                             verbose = F, 
+                             data = results)
 
       # lnVR, comparison of standard deviations
       cv <- metafor::rma.mv(yi = effect_size_VR, V = sample_variance_VR,
@@ -342,8 +411,6 @@ for (t in 1:n) {
     }
   )
 }
-
-
 ```
 
 In the above function, we use 'tryCatch' and 'conditionMessage' to prevent the loop from aborting when the first error at row 84 is produced.
