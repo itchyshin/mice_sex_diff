@@ -7,3 +7,5 @@ data/
 *.html
 scripts/*files/
 export
+cache/
+figure/
