@@ -1,8 +1,8 @@
 ---
 title: "Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
 author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Brooks,
-  Will Cornwell, Daniel Falster, Malgorzata Lagisz, Jeremy Mason, Daniel Noble, Alistair
-  Senior & Shinichi Nakagawa
+  Will Cornwell, Daniel Falster, Malgorzata Lagisz, Jeremy Mason, Alistair
+  Senior, Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
   bookdown::html_document2: 
@@ -53,7 +53,7 @@ knitr::opts_chunk$set(
 
 ```{r packages, echo = TRUE, eval = FALSE}
 library(pacman)
-pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here)
+pacman::p_load(readr, dplyr, metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, pander)
 ```
 ## Functions 
 Functions needed for preparing the data for meta analyses
@@ -2910,7 +2910,7 @@ kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (para
 
 # R Session Information
 
-```{r Session}
-sessionInfo()
+```{r}
+sessionInfo() %>% pander()
 ```
 
