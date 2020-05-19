@@ -298,14 +298,14 @@ We can also have a look at the mean-variance relationships in these data (Figure
     filter(!is.na(lnSD_f) & !is.inf(lnSD_f))
                  
 male <- ggplot(results, aes(x = lnMean_m, y = logSD_m)) +
-    geom_point(color = "blue", size = 2) +
+    geom_point(color = "turquoise", size = 2) +
    geom_smooth(method = "lm", se = FALSE, color="black") + 
     labs(x = "log (Mean)",
          y = "log (SD)") + 
     theme_classic()
 
 female <- ggplot(results, aes(x = lnMean_f, y = lnSD_f)) +
-    geom_point(color = "pink", size = 2) +
+    geom_point(color = "orange", size = 2) +
   geom_smooth(method = "lm", se = FALSE, color="black")+
     labs(x = "log (Mean)",
          y = "log (SD)") + 
