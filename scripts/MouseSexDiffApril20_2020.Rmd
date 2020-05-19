@@ -38,7 +38,7 @@ pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, 
 
 This supplementary material follows the general structure described in our methods and is outlined here in Figure \@ref(fig:FigG1). Generally speaking, the first few sections describe the processes by which the data were cleaned and re-organised for analysis. This is followed by how the first order and second order meta-analyses were conducted. Supplemental tables and figures that are referenced within the main manuscript can be found at the end of the document. Various parts of the workflow can be conveniently referenced using the table of contents panel (located along the side). We will refer back to this figure as we describe the various aspects of the code and data processing in relevant places.
 
-```{r FigG1, fig.width = 4, fig.height = 8, fig.cap="Workflow of data process and meta-analysis"}
+```{r FigG1, echo = FALSE, fig.width = 4, fig.height = 8, fig.cap="Workflow of data process and meta-analysis"}
 
 include_graphics(here("images", "workflow.png"))
 ```
@@ -2280,7 +2280,7 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 ```
 
 ## Figure
-Figure \@ref(fig:FigS1) is similar to Figure 3 in the main article.
+Figure \@ref(fig:FigS1) is similar to Figure 3 in the main article except that lnVR has been added to the plot for comparison with lnCVR and lnRR.
 
 ```{r FigS1, fig.height = 8, fig.width = 7, fig.cap=" Numbers of either male (blue-green bars) or female (orange-red bars) biased traits  (Panel A) across functional groups, this time for lnCVR (left hand side), lnVR (middle) and lnRR (right hand side). Panel B shows effect sizes from separate meta-analysis for each functional group, and Panel C contains results of heterogeneity analyses. All three panels represent results evaluated across all traits."}
 
@@ -2293,7 +2293,7 @@ FigS1
 
 ## Figure
 
-### Sex-bias in traits: Methods and results 
+### Sex-bias in traits sub-analysis
 
 #### Methods
 Among the 147 traits (i.e. with ‘first-order’ meta-analytic results), we found 31 traits to be significantly male-biased and 30 female-biased for lnCVR (47 male-biased and 39 female- biased for lnRR; 74 male and 55 female-biased for lnVR). We used this statistical significance to categorize traits into two groups: male-based and female-biased traits. For each set of these sex-biased traits, we conducted second-order meta-analyses with trait as the unit of analysis in the same way as those using lnRR, lnVR and lnCVR (Figure \@ref(fig:FigG1)J).  As sensitivity analyses, we also employed another way of separating male- and female-biased traits. We quantified traits that were more than 10% biased towards either of the sexes, regardless of significance (N[male-biased] = 31, & N[female-biased] = 36 for lnCVR,  N[male-biased] = 56, & N[female-biased] = 57 for lnVR , N[male-biased] = 42, & N[female-biased] = 33  for lnRR; see Supplemental Figure S\@ref(fig:FigS2), Supplemental Table 7.3).
