@@ -1,10 +1,18 @@
 ---
-title: "Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
+title: 'Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary
+  and statistical implications'
 author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Brooks,
-  Will Cornwell, Daniel Falster, Malgorzata Lagisz, Jeremy Mason, Alistair
-  Senior, Daniel Noble, & Shinichi Nakagawa
+  Will Cornwell, Daniel Falster, Malgorzata Lagisz, Jeremy Mason, Alistair Senior,
+  Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
+  bookdown::html_document2:
+    code_folding: hide
+    number_sections: yes
+    theme: flatly
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
   word_document:
     toc: yes
     toc_depth: '4'
@@ -13,27 +21,24 @@ output:
   pdf_document:
     toc: yes
     toc_depth: '4'
-  bookdown::html_document2: 
-            toc: true
-            code_folding: hide
-            toc_depth: 6
-            toc_float: yes
-            number_sections: yes
-            theme: flatly
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '4'
 subtitle: Electronic Supplementary Material
 always_allow_html: yes
 ---
 
 ```{r packages1, echo = FALSE, eval = TRUE, messages = FALSE}
 library(pacman)
-pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr)
+pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr, pander, splus2R)
 ```
 
 # General Introduction
 
-This supplementary material follows the general structure described in our methods and is outlined here in Figure \@ref(fig:FigG1). Generally speaking, the first few sections describe the processes by which the data were cleaned and re-organised for analysis. This iss followed by how the first order and second order meta-analsyes were conducted. Supplemental tables and figures that are referenecd within the main manuscript can be found at the end of the document. Various parts of the workflow can be conviently referenecd using the side table of contents panel. We will refer back to this figure as we describe the various aspects of the code and data processing in relevant places.
+This supplementary material follows the general structure described in our methods and is outlined here in Figure \@ref(fig:FigG1). Generally speaking, the first few sections describe the processes by which the data were cleaned and re-organised for analysis. This is followed by how the first order and second order meta-analyses were conducted. Supplemental tables and figures that are referenced within the main manuscript can be found at the end of the document. Various parts of the workflow can be conveniently referenced using the table of contents panel (located along the side). We will refer back to this figure as we describe the various aspects of the code and data processing in relevant places.
 
-```{r FigG1, fig.cap="Workflow of data process and meta-analysis"}
+```{r FigG1, fig.width = 4, fig.height = 8, fig.cap="Workflow of data process and meta-analysis"}
 
 include_graphics(here("images", "workflow.png"))
 ```
@@ -209,7 +214,7 @@ calculate_population_stats <- function(mydata, min_individuals = 5){
               x_sd   =   sd(data_point, na.rm = TRUE),
               n_ind  = n()) %>%
     ungroup() %>%
-    filter(n_ind > min_individuals) %>%   # NOTE here that you are excluding data with 5 exactly....
+    filter(n_ind > min_individuals) %>%   
     group_by(population) %>%
     filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
     multi_spread(sex, c(x_bar, x_sd, n_ind))      # Spreads the data out into wide format, so sexes are beside each other which is more typical of meta-analytic data
@@ -263,15 +268,64 @@ data <- readRDS(here("export", "data_clean.rds"))
 procedures <- read_csv(here("data", "procedures.csv"))
 
 ```
+## Mean-variance relationships
+We can also have a look at the mean-variance relationships in these data (Figure \@ref(fig:FigCor)). Note that these data have not been filtered to the same extent that the data is that is used in the meta-analyses, but this is simply here to demonstrate that mean-variance relationships exist and are strong providing strong justification for using the log coefficient of variation ratio (lnCVR).
 
+```{r FigCor, fig.height=3, message = FALSE, fig.cap= "Mean-variance relationships (log(Mean) vs log(SD, standard deviation)) across all traits for males (A) and females (B)."}
+
+# First, clean up the data
+
+ results <- data %>%
+            group_by(population,
+             production_center,  
+             strain_name,  
+             parameter_name,
+             sex) %>%
+    summarise(trait  = parameter_name[1],
+              x_bar  = mean(data_point, na.rm = TRUE),
+              x_sd   =   sd(data_point, na.rm = TRUE),
+              n_ind  = n()) %>%
+    ungroup() %>%
+    filter(n_ind > 5) %>%   # NOTE here that you are excluding data with 5 exactly....
+    group_by(population) %>%
+    filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
+    multi_spread(sex, c(x_bar, x_sd, n_ind)) %>%
+    mutate(lnMean_m = log(male_x_bar),
+           logSD_m  = log(male_x_sd),
+           lnMean_f = log(female_x_bar),
+           lnSD_f   = log(female_x_sd)) %>%
+    filter(!is.na(logSD_m) & !is.inf(logSD_m)) %>%
+    filter(!is.na(lnSD_f) & !is.inf(lnSD_f))
+                 
+male <- ggplot(results, aes(x = lnMean_m, y = logSD_m)) +
+    geom_point(color = "blue", size = 2) +
+   geom_smooth(method = "lm", se = FALSE, color="black") + 
+    labs(x = "log (Mean)",
+         y = "log (SD)") + 
+    theme_classic()
+
+female <- ggplot(results, aes(x = lnMean_f, y = lnSD_f)) +
+    geom_point(color = "pink", size = 2) +
+  geom_smooth(method = "lm", se = FALSE, color="black")+
+    labs(x = "log (Mean)",
+         y = "log (SD)") + 
+    theme_classic()
+
+ggarrange(male, female, ncol = 2, nrow = 1, labels = c("A", "B"))
+
+            
+```
+
+We can see that there are strong relationships between the log transformed means and standard deviations for both males (Figure \@ref(fig:FigCor)A) and females (Figure \@ref(fig:FigCor)B), with the Person's correlation coefficient being `r round(stats::cor(results$lnMean_m,results$logSD_m, use = "complete.obs"), digits = 3) ` and `r round(cor(results$lnMean_f, results$lnSD_f, use = "complete.obs"), digits = 3) `, respectively.
+ 
 # Meta-analyses
 ## Population as analysis unit 
 
-In this section, we cover the workflow described in Figure \@ref(fig:FigG1) C and D.
+In this section, we cover the workflow described in Figure \@ref(fig:FigG1)C and D.
 
 ### Loop through meta-analyses on all traits
 
-This section covers Figure \@ref(fig:FigG1) C, by conducting a meta-analsyis for all traits and producing the meta-analysed effect sizes (lnVR, lnCVR and lnRR).
+This section covers Figure \@ref(fig:FigG1) C, by conducting a meta-analysis for all traits and producing the meta-analysed effect sizes (lnVR, lnCVR and lnRR).
 
 * The loop combines the functions mentioned above and fills the data matrix with results from our meta analysis. 
 * Error messages indicate traits that either did not reach convergence, or that did not return meaningful results in the meta-analysis, due to absence of variance. Those traits will be removed in later steps, outlined below.
@@ -347,7 +401,7 @@ Any produced "Warnings" indicate cases where variance components are set to zero
 
 ### Merging datasets & removal of non-converged traits
 
-Here we cover Figure \@ref(fig:FigG1) D, removing non-coverging model results and non-informative traits.Procedure names, grouping variables and trait names ("parameter_names") are the merged back together with the results from the metafor analysis above.
+Here we cover Figure \@ref(fig:FigG1)D, removing non-coverging model results and non-informative traits. Procedure names, grouping variables and trait names ("parameter_names") are the merged back together with the results from the metafor analysis above.
  
 ```{r cleanMeta1}
 results_alltraits_grouping2 <- 
@@ -381,10 +435,10 @@ The traits where there was not enough variation include: "number of caudal verte
 
 
 ## Meta-analysis: condensing non-independent traits 
-This dataset contained a number of highly correlated traits, such as different kinds of cell counts (for example hierarchical parameterization within immunological assays). As those data-points are not independent of each other,  we conducted meta analyses on these correlated parameters to collapse the number of levels. This section describes the workflow depicted in Figure \@ref(fig:FigG1) E & F.
+This dataset contained a number of highly correlated traits, such as different kinds of cell counts (for example hierarchical parameterization within immunological assays). As those data-points are not independent of each other,  we conducted meta analyses on these correlated parameters to collapse the number of levels. This section describes the workflow depicted in Figure \@ref(fig:FigG1)E & F.
 
-### Collapsing and merging correlated parameters, preparation for Table S2
-Count the number of parameter names (correlated sub-traits) in each parameter group (par_group_size). This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation. The workflow here relates to Figure \@ref(fig:FigG1) E. 
+### Collapsing and merging correlated parameters
+Count the number of parameter names (correlated sub-traits) in each parameter group (par_group_size). This serves to identify and separate the traits that are correlated from the full dataset that can be processed as is. If the sample size (n) for a given "parameter group" equals 1, the trait is unique and uncorrelated. All instances, where there are 2 or more traits associated with the same parameter group (90 cases), are selected for a "mini-meta analysis", which removes the issue of correlation. The workflow here relates to Figure \@ref(fig:FigG1)E. 
 
 ```{r Table2_Meta1}
 # Here we double check numbers of trait parameters in the dataset
@@ -513,7 +567,7 @@ metacombo %>%
 ```
 
 ## Second-order meta-analysis for functional groups
-Here, we  describe the workflow depicted in Figure \@ref(fig:FigG1) H. We now use our uncorrelated traits from our first order meta-analysis to conduct a secondary meta-analysis by analysing the 9 functional trait groups. We esatimte an overall mean lnCVR, lnVR and lnRR for each functional trait group. 
+Here, we describe the workflow depicted in Figure \@ref(fig:FigG1)H. We now use our uncorrelated traits from our first order meta-analysis to conduct a secondary meta-analysis by analysing the 9 functional trait groups. We estimate an overall mean lnCVR, lnVR and lnRR for each functional trait group. 
 
 ### Preparing the data
 
@@ -647,7 +701,7 @@ overall2 <- bind_rows(extract_trait(overall1, "Behaviour"),
 
 ## Second-order meta-analysis of heterogenity
 
-The analysis for heterogeneity follows the workflow of the above steps for the different meta-analyses and specifically Figure \@ref(fig:FigG1) I & J. However, in the initial meta-analysis we extract sigma^2 and errors for mouse strains and centers (Institutions). As above a Loop is run and parameters extracted from metafor (sigma2's, s.nlevels)
+To see how much heterogeneity there is for each trait across different populations on average (for different functional groups and overall), we also conducted secondary meta-analyses by combining the total heterogeneities. More specifically, we combined the logarithm of the sum of the three variance components (Strain, Location and Unit; see above) with 1/2(N[effect size] - 1) as the sampling variance via the random effect model. That is, we conducted 3 sets of 10 secondary meta-analyses as with those of mean effect sizes for each trait, i.e. meta-analyzing log(total heterogeneities) for 9 functional groups and all the groups combined (Figure \@ref(fig:FigG1)I). The analysis for heterogeneity follows the workflow of the above steps for the different meta-analyses and specifically Figure \@ref(fig:FigG1)I & J. However, in the initial meta-analysis we extract sigma^2 and errors for mouse strains and centers (Institutions). As above a Loop is run and parameters extracted from metafor (sigma2's, s.nlevels)
 
 ```{r hetero_loop, echo = TRUE, eval = TRUE, message=FALSE, warning=FALSE, cache = TRUE}
 
@@ -745,11 +799,10 @@ for (t in 1:n) {
 }
 ```
 
-Here we exclude traits without variation between mouse strains and merge data sets containing metafor results with procedure etc. names. Dealing with the correlated parameters, and running the second -order meta-analysis for heterogeneity data (Figure \@ref(fig:FigG1) I)
+Here we exclude traits without variation between mouse strains and merge data sets containing metafor results with procedure etc. names. Dealing with the correlated parameters, and running the second -order meta-analysis for heterogeneity data (Figure \@ref(fig:FigG1)I)
 
 ```{r hetero,eval=TRUE, echo = TRUE}
 
- 
               results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
 # nrow(results.allhetero.grouping) #232  
 
@@ -1093,7 +1146,7 @@ HeteroS1 <-
 ```
 
 # Meta-analysis results
-## Preparation for Figure 4 
+## Preparing: Figure 3 
 ### Count data, based on First-order meta-analysis results
 This includes all separate eligible traits.
 Re-ordering of grouping terms. 
@@ -1291,593 +1344,12 @@ Metameta_Fig3_alltraits <- overall4 %>%
 ```
 
 
-## Figure 4
+## Main Manuscript: Figure 3
 
-Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Figure \@ref(fig:FigG1) D. Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure \@ref(fig:FigG1)). Both panels represent results evaluated across all traits (Phase 3, Figure \@ref(fig:FigG1)). Traits that are male biased are shown in blue, whereas female bias data is represented in orange.
-
-```{r Fig4}
+```{r Fig3, fig.cap = "Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Figure 1.1D. Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure1.1). Both panels represent results evaluated across all traits. Traits that are male biased are shown in blue, whereas female bias data is represented in orange."}
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(10, 9), labels = c("A", "B"))
 Fig4
 ```
-
-
-
-## Preparation for Figure 5
-To further investigate sex bias in this dataset, and in particular if the extent of sex bias differs between traits, we investigate the magnitude of male- and female bias in significantly different traits on (both for means and variability)
-
-To do this, we select only traits that have CIs that do not overlap with zero.
-The code below creates Figure 5A.
-```{r Fig5_prep}
-
- meta.plot2.sig <- meta_clean %>%
-                   mutate(lnCVRsig = ifelse(lnCVR_lower * lnCVR_upper > 0, 1, 0), 
-                           lnVRsig = ifelse( lnVR_lower * lnVR_upper  > 0, 1, 0),
-                           lnRRsig = ifelse( lnRR_lower * lnRR_upper  > 0, 1, 0))
-
-meta.plot2.sig.b <- meta.plot2.sig[, c("lnCVR", "lnRR", "lnCVRsig", "lnVRsig", "lnRRsig", "GroupingTerm")] 
-
-    meta.plot2.sig.c <- gather(meta.plot2.sig.b, trait, value, lnCVR:lnRR)
-meta.plot2.sig.c$sig <- "placeholder"
-
-meta.plot2.sig.c$trait <- factor(meta.plot2.sig.c$trait, levels = c("lnCVR", "lnRR")) 
-
-  meta.plot2.sig.c$sig <- ifelse(meta.plot2.sig.c$trait == "lnCVR", 
-                                 meta.plot2.sig.c$lnCVRsig,
-                                 ifelse(meta.plot2.sig.c$trait == "lnVR", 
-                                        meta.plot2.sig.c$lnVRsig, 
-                                        meta.plot2.sig.c$lnRRsig))
-
-# Choosing sex biased ln-ratios significantly larger than 0
-meta.plot2.sig.malebias <- meta.plot2.sig.c %>%
-                           group_by_at(vars(trait, GroupingTerm)) %>%
-                           filter(sig == 1) %>%
-                           summarise(male_sig = sum(value > 0), female_sig = sum(value < 0), total = male_sig + female_sig)
-
-meta.plot2.sig.malebias <- ungroup(meta.plot2.sig.malebias) %>%
-                          # add "Hearing" for lnCVR (not filtered as only zeros)
-                          add_row(trait = "lnCVR", GroupingTerm = "Hearing", male_sig = 0, female_sig = 0, .before = 4) %>% 
-                          mutate(malepercent = male_sig * 100 / total, femalepercent = female_sig * 100 / total)
-
-meta.plot2.sig.malebias$label <- "CI not overlapping zero"
-
-# Re-structure to create stacked bar plots
-
-  meta.plot2.sig.bothsexes <- as.data.frame(meta.plot2.sig.malebias)
-meta.plot2.sig.bothsexes.b <- gather(meta.plot2.sig.bothsexes, key = sex, value = percent, malepercent:femalepercent, factor_key = TRUE)
-
-# create new sample size variable
-
-meta.plot2.sig.bothsexes.b$samplesize <- with(meta.plot2.sig.bothsexes.b, ifelse(sex == "malepercent", male_sig, female_sig))
-
-# Add summary row ('All') and re-arrange rows into correct order for plotting 
-
-meta.plot2.sig.bothsexes.c <- meta.plot2.sig.bothsexes.b %>% 
-                              group_by(trait, sex) %>% 
-                              summarise(GroupingTerm = "All", 
-                                        male_sig = sum(male_sig), 
-                                        female_sig = sum(female_sig), 
-                                        total = male_sig + female_sig, 
-                                        label = "CI not overlapping zero", 
-                                        samplesize = sum(samplesize)) %>%
-                              mutate(percent = ifelse(sex == "femalepercent", 
-                                                      female_sig*100/(male_sig+female_sig), 
-                                                      male_sig*100/(male_sig+female_sig))) %>%
-                              bind_rows(meta.plot2.sig.bothsexes.b, .) %>%
-                              mutate(rownumber = row_number()) %>%
-                              .[c(37, 1:9, 39, 10:18, 38, 19:27, 40, 28:36), ] 
-
-  #line references in previous code line corresponding to: 
-  #'lnCVR(male(All)), lnCVR(male('single grouping terms'), lnRR(male(All)), lnRR(male('single grouping terms')),
-  #lnCVR(female(All)), lnCVR(female('single grouping terms'), lnRR(female(All)), lnRR(female('single grouping terms'))'
-
-meta.plot2.sig.bothsexes.c$GroupingTerm <- factor(meta.plot2.sig.bothsexes.c$GroupingTerm,
-                                                  levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
-                                                             "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All")) 
-meta.plot2.sig.bothsexes.c$GroupingTerm <- factor(meta.plot2.sig.bothsexes.c$GroupingTerm, 
-                                                  rev(levels(meta.plot2.sig.bothsexes.c$GroupingTerm)))
-
-# Plot Fig2 all significant results (CI not overlapping zero)
-# Several grouping terms are added post-hoc (with no data to display): no significant lnCVR for 'Hearing' in either sex; no sig. male-biased lnCVR for 'Immunology' and 'Eye, and no significant female-biased lnRR for 'Eye'.
-
-malebias_Fig2_sigtraits <-
-  ggplot(meta.plot2.sig.bothsexes.c) +
-  aes(x = GroupingTerm, y = percent, fill = sex) +
-  ylab("Percentage") +
-  geom_col() +
-  geom_hline(yintercept = 50, linetype = "dashed", color = "gray40") +
-  geom_text(
-    data = subset(meta.plot2.sig.bothsexes.c, samplesize != 0), aes(label = samplesize), position = position_stack(vjust = .5),
-    color = "white", size = 3.5) +
-  facet_grid(cols = vars(trait), 
-             rows = vars(label), 
-             labeller = label_wrap_gen(width = 18),
-             scales = "free", space = "free") +
-  scale_fill_brewer(palette = "Set2") +
-  theme_bw(base_size = 18) +
-  theme(strip.text.y = element_text(angle = 270, size = 10, margin = margin(t = 15, r = 15, b = 15, l = 15)),
-        strip.text.x = element_text(size = 12),
-        strip.background = element_rect(colour = NULL, linetype = "blank", fill = "gray90"),
-        text = element_text(size = 14),
-        panel.spacing = unit(0.5, "lines"),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        panel.grid.major.x = element_line(linetype = "solid", colour = "gray95"),
-        panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
-        panel.grid.minor.y = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        legend.position = "none",
-        axis.title.y = element_blank()) +
-  coord_flip()
-
-### Preparation for Plots on significant sex-bias (Second-order meta analysis results)
-
-#### Figure 5 B - traits with CI not overlapping 0 
-# Prepare data 
-# create column with 1 = different from zero, 0 = zero included in CI
-
-#### Male-biased (significant) traits:
-
-meta.male.plot3.sig <- metacombo %>%
-                       mutate(sigCVR = ifelse(lnCVR_lower > 0, 1, 0),
-                               sigVR = ifelse( lnVR_lower > 0, 1, 0),
-                               sigRR = ifelse( lnRR_lower > 0, 1, 0))
-
-# Significant subset for lnCVR
-metacombo_male.plot3.CVR <- meta.male.plot3.sig    %>%
-                            filter(sigCVR == 1)    %>%
-                            group_by(GroupingTerm) %>%
-                            nest()
-
-metacombo_male.plot3.CVR.all <- meta.male.plot3.sig %>%
-                                filter(sigCVR == 1) %>%
-                                nest(data = everything())   
-
-# Significant subset for lnVR
-metacombo_male.plot3.VR <- meta.male.plot3.sig    %>%
-                           filter(sigVR == 1)     %>%
-                           group_by(GroupingTerm) %>%
-                           nest()
-
-metacombo_male.plot3.VR.all <- meta.male.plot3.sig    %>%
-                               filter(sigVR == 1)     %>%
-                               nest(data = everything())    
-
-# Significant subset for lnRR
-metacombo_male.plot3.RR <- meta.male.plot3.sig    %>%
-                           filter(sigRR == 1)     %>%
-                           group_by(GroupingTerm) %>%
-                           nest()
-
-metacombo_male.plot3.RR.all <- meta.male.plot3.sig %>%
-                               filter(sigRR == 1)  %>%
-                               nest(data = everything())   
-
-# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
-
-plot3.male.meta.CVR <- metacombo_male.plot3.CVR %>%
-                       mutate(model_lnCVR = map(data, 
-                                                ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96), 
-                                              control = list(optimizer = "optim", 
-                                                             optmethod = "Nelder-Mead", 
-                                                             maxit = 1000), 
-                                              verbose = F)))
-
-plot3.male.meta.VR <- metacombo_male.plot3.VR %>%
-                      mutate(model_lnVR = map(data, 
-                                              ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
-                                            control = list(optimizer = "optim", 
-                                                           optmethod = "Nelder-Mead", 
-                                                           maxit = 1000), 
-                                            verbose = F)))
-
-plot3.male.meta.RR <- metacombo_male.plot3.RR %>%
-                      mutate(model_lnRR = map(data, 
-                                              ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
-                                              control = list(optimizer = "optim", 
-                                                             optmethod = "Nelder-Mead", 
-                                                             maxit = 1000), 
-                                              verbose = F)))
-
-# Across all grouping terms #
-
-plot3.male.meta.CVR.all <- metacombo_male.plot3.CVR.all %>%
-                            mutate(model_lnCVR = map(data,
-                                                     ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96),
-                                                  control = list(optimizer = "optim", 
-                                                                 optmethod = "Nelder-Mead", 
-                                                                 maxit = 1000), 
-                                                  verbose = F)))
-
-plot3.male.meta.CVR.all <- plot3.male.meta.CVR.all %>% 
-                            mutate(GroupingTerm = "All")
-
-plot3.male.meta.VR.all <- metacombo_male.plot3.VR.all %>%
-                          mutate(model_lnVR = map(data, 
-                                                  ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
-                                                  control = list(optimizer = "optim", 
-                                                                 optmethod = "Nelder-Mead", 
-                                                                 maxit = 1000), 
-                                                  verbose = F)))
-
-plot3.male.meta.VR.all <- plot3.male.meta.VR.all %>% 
-                          mutate(GroupingTerm = "All")
-
-plot3.male.meta.RR.all <- metacombo_male.plot3.RR.all %>%
-                          mutate(model_lnRR = map(data, 
-                                                  ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
-                                                control = list(optimizer = "optim", 
-                                                               optmethod = "Nelder-Mead", 
-                                                               maxit = 1000), 
-                                                verbose = F)))
-
-plot3.male.meta.RR.all <- plot3.male.meta.RR.all %>% 
-                          mutate(GroupingTerm = "All")
-
-# Combine with separate grouping term results
-
-plot3.male.meta.CVR <- bind_rows(plot3.male.meta.CVR, plot3.male.meta.CVR.all)
- plot3.male.meta.VR <- bind_rows(plot3.male.meta.VR,   plot3.male.meta.VR.all)
- plot3.male.meta.RR <- bind_rows(plot3.male.meta.RR,   plot3.male.meta.RR.all)
-
-# **Re-structure data for each grouping term; delete un-used variables
-
-plot3.male.meta.CVR.b <- as.data.frame(plot3.male.meta.CVR %>% 
-                                       group_by(GroupingTerm) %>%
-                                       mutate( lnCVR = map_dbl(model_lnCVR, pluck(2)), 
-                                               lnCVR_lower = map_dbl(model_lnCVR, pluck(6)), 
-                                               lnCVR_upper = map_dbl(model_lnCVR, pluck(7)), 
-                                               lnCVR_se = map_dbl(model_lnCVR, pluck(3)), 
-                                               lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
-
-add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA, NA))) %>% 
-                                  setNames(names(plot3.male.meta.CVR.b))
-
-plot3.male.meta.CVR.b <- bind_rows(plot3.male.meta.CVR.b, add.row.hearing)
-plot3.male.meta.CVR.b <- plot3.male.meta.CVR.b[order(plot3.male.meta.CVR.b$GroupingTerm), ]
-
-plot3.male.meta.VR.b <- as.data.frame(plot3.male.meta.VR %>% 
-                                      group_by(GroupingTerm) %>%
-                                      mutate(lnVR = map_dbl(model_lnVR, pluck(2)), 
-                                             lnVR_lower = map_dbl(model_lnVR, pluck(6)),
-                                             lnVR_upper = map_dbl(model_lnVR, pluck(7)), 
-                                             lnVR_se = map_dbl(model_lnVR, pluck(3)),
-                                             lnVR_I2 = map_dbl(model_lnVR, pluck("I2"))))[, c(1, 4:8)]
-
-plot3.male.meta.VR.b <- plot3.male.meta.VR.b[order(plot3.male.meta.VR.b$GroupingTerm), ]
-
-plot3.male.meta.RR.b <- as.data.frame(plot3.male.meta.RR %>% 
-                                      group_by(GroupingTerm) %>% 
-                                      mutate(lnRR = map_dbl(model_lnRR, pluck(2)), 
-                                             lnRR_lower = map_dbl(model_lnRR, pluck(6)),
-                                             lnRR_upper = map_dbl(model_lnRR, pluck(7)), 
-                                             lnRR_se = map_dbl(model_lnRR, pluck(3)),
-                                             lnRR_I2 = map_dbl(model_lnRR, pluck("I2"))))[, c(1, 4:8)]
-
-plot3.male.meta.RR.b <- plot3.male.meta.RR.b[order(plot3.male.meta.RR.b$GroupingTerm), ]
-
-overall.male.plot3 <- full_join(plot3.male.meta.CVR.b, plot3.male.meta.VR.b)
-overall.male.plot3 <- full_join(overall.male.plot3,    plot3.male.meta.RR.b)
-
-overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
-                                          levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
-                                                     "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
-overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
-                                          rev(levels(overall.male.plot3$GroupingTerm)))
-
-overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
-                                          levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
-                                                     "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
-overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
-                                          rev(levels(overall.male.plot3$GroupingTerm)))
-
-# Restructure MALE data for plotting 
-
-overall3.male.sig <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) 
-
-lnCVR.ci <- overall3.male.sig            %>%
-            filter(parameter == "lnCVR") %>%
-            mutate(ci.low = lnCVR_lower, 
-                   ci.high = lnCVR_upper)
-
-lnRR.ci <- overall3.male.sig           %>%
-           filter(parameter == "lnRR") %>%
-           mutate(ci.low = lnRR_lower, 
-                 ci.high = lnRR_upper)
-
-overall4.male.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
-                     select(GroupingTerm, 
-                            parameter, 
-                            value, 
-                            ci.low, 
-                            ci.high) 
-
-overall4.male.sig$label <- "CI not overlapping zero"
-
-# Plot Fig 5B all significant results (CI not overlapping zero) for males. This is the right panel in Figure 5B.
-
-Metameta_Fig3_male.sig <- overall4.male.sig %>%
-  ggplot(aes(y = GroupingTerm, x = value)) +
-  geom_errorbarh(aes(xmin = ci.low,
-                     xmax = ci.high),
-                 height = 0.1, 
-                 show.legend = FALSE) +
-  geom_point(aes(shape = parameter),
-             fill = "mediumaquamarine", 
-             color = "mediumaquamarine", 
-             size = 2.2, 
-             show.legend = FALSE) +
-  scale_x_continuous(limits = c(0, 0.4),
-                     breaks = c(0, 0.3),
-                       name = "Effect size") +
-  geom_vline(xintercept = 0,
-                  color = "black",
-              linetype = "dashed") +
-  facet_grid(cols = vars(parameter), 
-             rows = vars(label),
-             labeller = label_wrap_gen(width = 23),
-             scales = "free",
-             space = "free") +
-  theme_bw() +
-  theme(strip.text.y = element_text(angle = 270, 
-                                    size = 10, 
-                                    margin = margin(t = 15, r = 15, b = 15, l = 15)),
-        strip.text.x = element_text(size = 12),
-        strip.background = element_rect(colour = NULL, 
-                                        linetype = "blank", 
-                                        fill = "gray90"),
-        text = element_text(size = 14),
-        panel.spacing = unit(0.5, "lines"),
-        panel.border = element_blank(),
-        axis.line = element_line(),
-        panel.grid.major.x = element_line(linetype = "solid", 
-                                          colour = "gray95"),
-        panel.grid.major.y = element_line(linetype = "solid", 
-                                          color = "gray95"),
-        panel.grid.minor.y = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        legend.title = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank())
-
-# Metameta_Fig3_male.sig
-
-#### Female part, significant traits: Female Fig5B sig
-
-# as above: Prepare data for traits with CI not overlapping 0
-# create column with 1 = different from zero, 0 = zero included in CI
-
-# Female-biased traits
-
-meta.female.plot3.sig <- metacombo %>%
-  mutate(sigCVR = ifelse(lnCVR_upper < 0, 1, 0),
-          sigVR = ifelse(lnVR_upper < 0, 1, 0),
-          sigRR = ifelse(lnRR_upper < 0, 1, 0))
-
-# Significant subset for lnCVR
-
-metacombo_female.plot3.CVR <- meta.female.plot3.sig  %>%
-                              filter(sigCVR == 1)    %>%
-                              group_by(GroupingTerm) %>%
-                              nest()
-
-metacombo_female.plot3.CVR.all <- meta.female.plot3.sig %>%
-                                  filter(sigCVR == 1)   %>%
-                                  nest(data = everything())   
-
-# Significant subset for lnVR
-
-metacombo_female.plot3.VR <- meta.female.plot3.sig  %>%
-                             filter(sigVR == 1)     %>%
-                             group_by(GroupingTerm) %>%
-                             nest()
-
-metacombo_female.plot3.VR.all <- meta.female.plot3.sig  %>%
-                                 filter(sigVR == 1)     %>%
-                                 nest(data = everything())   
-
-# Significant subset for lnRR
-
-metacombo_female.plot3.RR <- meta.female.plot3.sig  %>%
-                             filter(sigRR == 1)     %>%
-                             group_by(GroupingTerm) %>%
-                             nest()
-
-metacombo_female.plot3.RR.all <- meta.female.plot3.sig %>%
-                                 filter(sigRR == 1)    %>%
-                                 nest(data = everything())   
-
-# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
-
-plot3.female.meta.CVR <- metacombo_female.plot3.CVR %>%
-                         mutate(model_lnCVR = map(data, 
-                                                  ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96),
-                                                  control = list(optimizer = "optim", 
-                                                                 optmethod = "Nelder-Mead", 
-                                                                 maxit = 1000), 
-                                                  verbose = F)))
-
-plot3.female.meta.VR <- metacombo_female.plot3.VR %>%
-                        mutate(model_lnVR = map(data, ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
-                                                control = list(optimizer = "optim", 
-                                                               optmethod = "Nelder-Mead", 
-                                                               maxit = 1000), 
-                                                verbose = F)))
-
-plot3.female.meta.RR <- metacombo_female.plot3.RR %>%
-                        mutate(model_lnRR = map(data, ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
-                                                control = list(optimizer = "optim", 
-                                                               optmethod = "Nelder-Mead", 
-                                                               maxit = 1000), 
-                                                verbose = F)))
-
-# Across all grouping terms #
-
-plot3.female.meta.CVR.all <- metacombo_female.plot3.CVR.all %>%
-                             mutate(model_lnCVR = map(data, ~ metafor::rma.uni(yi = .x$lnCVR, sei=(.x$lnCVR_upper-.x$lnCVR_lower)/(2 * 1.96),
-                                                       control = list(optimizer = "optim", 
-                                                                      optmethod = "Nelder-Mead", 
-                                                                      maxit = 1000),
-                                                       verbose = F)))
-
-plot3.female.meta.CVR.all <- plot3.female.meta.CVR.all %>% mutate(GroupingTerm = "All")
-
-plot3.female.meta.VR.all <- metacombo_female.plot3.VR.all %>%
-  mutate(model_lnVR = map(data, ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
-                          control = list(optimizer = "optim", 
-                                         optmethod = "Nelder-Mead", 
-                                         maxit = 1000), 
-                          verbose = F)))
-
-plot3.female.meta.VR.all <- plot3.female.meta.VR.all %>% mutate(GroupingTerm = "All")
-
-plot3.female.meta.RR.all <- metacombo_female.plot3.RR.all %>%
-                            mutate(model_lnRR = map(data, 
-                                                    ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
-                                                    control = list(optimizer = "optim", 
-                                                                   optmethod = "Nelder-Mead", 
-                                                                   maxit = 1000), 
-                                                    verbose = F)))
-
-plot3.female.meta.RR.all <- plot3.female.meta.RR.all %>% 
-                            mutate(GroupingTerm = "All")
-
-# Combine with separate grouping term results
-
-plot3.female.meta.CVR <- bind_rows(plot3.female.meta.CVR, plot3.female.meta.CVR.all)
- plot3.female.meta.VR <- bind_rows(plot3.female.meta.VR,   plot3.female.meta.VR.all)
- plot3.female.meta.RR <- bind_rows(plot3.female.meta.RR,   plot3.female.meta.RR.all)
-
-# Re-structure data for each grouping term; delete un-used variables
-
-plot3.female.meta.CVR.b <- as.data.frame(plot3.female.meta.CVR %>% 
-                                           group_by(GroupingTerm) %>%
-                                          mutate(    lnCVR = map_dbl(model_lnCVR, pluck(2)), 
-                                               lnCVR_lower = map_dbl(model_lnCVR, pluck(6)),
-                                               lnCVR_upper = map_dbl(model_lnCVR, pluck(7)), 
-                                                  lnCVR_se = map_dbl(model_lnCVR, pluck(3)),
-                                                  lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
-
-add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA,NA))) %>% 
-                                 setNames(names(plot3.female.meta.CVR.b))
-
-plot3.female.meta.CVR.b <- bind_rows(plot3.female.meta.CVR.b, add.row.hearing)
-plot3.female.meta.CVR.b <- plot3.female.meta.CVR.b[order(plot3.female.meta.CVR.b$GroupingTerm), ]
-
-plot3.female.meta.VR.b <- as.data.frame(plot3.female.meta.VR %>% 
-                                        group_by(GroupingTerm) %>%
-                                        mutate(      lnVR = map_dbl(model_lnVR, pluck(2)), 
-                                               lnVR_lower = map_dbl(model_lnVR, pluck(6)),
-                                               lnVR_upper = map_dbl(model_lnVR, pluck(7)), 
-                                                  lnVR_se = map_dbl(model_lnVR, pluck(3)),
-                                                  lnVR_I2 = map_dbl(model_lnVR, pluck("I2"))))[, c(1, 4:8)]
-
-plot3.female.meta.VR.b <- plot3.female.meta.VR.b[order(plot3.female.meta.VR.b$GroupingTerm), ]
-
-plot3.female.meta.RR.b <- as.data.frame(plot3.female.meta.RR %>% 
-                                        group_by(GroupingTerm) %>%
-                                        mutate(      lnRR = map_dbl(model_lnRR, pluck(2)), 
-                                               lnRR_lower = map_dbl(model_lnRR, pluck(6)), 
-                                               lnRR_upper = map_dbl(model_lnRR, pluck(7)), 
-                                                  lnRR_se = map_dbl(model_lnRR, pluck(3)),
-                                                  lnRR_I2 = map_dbl(model_lnRR, pluck("I2"))))[, c(1, 4:8)]
-
-plot3.female.meta.RR.b <- plot3.female.meta.RR.b[order(plot3.female.meta.RR.b$GroupingTerm), ]
-
-overall.female.plot3 <- full_join(plot3.female.meta.CVR.b, plot3.female.meta.VR.b)
-overall.female.plot3 <- full_join(overall.female.plot3, plot3.female.meta.RR.b)
-
-overall.female.plot3$GroupingTerm <- factor(overall.female.plot3$GroupingTerm, 
-                                            levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
-                                                       "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
-overall.female.plot3$GroupingTerm <- factor(overall.female.plot3$GroupingTerm, 
-                                            rev(levels(overall.female.plot3$GroupingTerm)))
-
-# Re-structuring data for plotting
-
-overall3.female.sig <- gather(overall.female.plot3, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) 
-
-lnCVR.ci <- overall3.female.sig %>%
-  filter(parameter == "lnCVR") %>%
-  mutate(ci.low = lnCVR_lower, 
-         ci.high = lnCVR_upper)
-
-# lnVR.ci <- overall3.female.sig  %>% filter(parameter == "lnVR") %>% mutate(ci.low = lnVR_lower, ci.high = lnVR_upper)
-
-lnRR.ci <- overall3.female.sig %>%
-  filter(parameter == "lnRR") %>%
-  mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
-
-overall4.female.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
-                       select(GroupingTerm, parameter, value, ci.low, ci.high) # lnVR.ci,
-
-overall4.female.sig$label <- "CI not overlapping zero"
-
-# PLOT preparation for Fig5B: all significant results (CI not overlapping zero, female )
-
-Metameta_Fig3_female.sig  <- overall4.female.sig %>%
-  ggplot(aes(y = GroupingTerm, x = value)) +
-  geom_errorbarh(aes(
-    xmin = ci.low,
-    xmax = ci.high),
-  height = 0.1, show.legend = FALSE) +
-  geom_point(aes(shape = parameter),
-    fill = "salmon1", color = "salmon1", size = 2.2,
-    show.legend = FALSE) +
-  scale_x_continuous(
-    limits = c(-0.4, 0),
-    breaks = c(-0.3, 0),
-    name = "Effect size") +
-  geom_vline(
-    xintercept = 0,
-    color = "black",
-    linetype = "dashed") +
-  facet_grid(
-    cols = vars(parameter), # rows = vars(label),
-    # labeller = label_wrap_gen(width = 23),
-    scales = "free",
-    space = "free") +
-  theme_bw() +
-  theme(
-    strip.text.y = element_text(angle = 270, size = 10, margin = margin(t = 15, r = 15, b = 15, l = 15)),
-    strip.text.x = element_text(size = 12),
-    strip.background = element_rect(colour = NULL, linetype = "blank", fill = "gray90"),
-    text = element_text(size = 14),
-    panel.spacing = unit(0.5, "lines"),
-    panel.border = element_blank(),
-    axis.line = element_line(),
-    panel.grid.major.x = element_line(linetype = "solid", colour = "gray95"),
-    panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
-    panel.grid.minor.y = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    legend.title = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank()
-  )
-
-# Metameta_Fig3_female.sig #(Figure 5B left panel)
-```
-
-## Figure 5
-Sex biases in trait values across trait groups (Step J in Figure \@ref(fig:FigG1)). The panels in A show differences in the number of affected traits, in variance (lnCVR) and means (lnRR), where there is a significant difference between the sexes (i.e CI not overlapping zero). Panel B shows results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits.
-
-```{r Fig5}
-#Joining the Parts:
-
-Fig5B <- ggarrange(Metameta_Fig3_female.sig, Metameta_Fig3_male.sig,
-  ncol = 2, nrow = 1, widths = c(1, 1.20), heights = c(1, 1))
-
-Fig5B <- annotate_figure(Fig5B,
-                bottom= text_grob("Effect Size", color = "black", face = "plain", size = 14))  
-
-Fig5 <- ggarrange(malebias_Fig2_sigtraits, Fig5B, 
-                  ncol = 1, nrow = 2, widths = c(1, 1.10), 
-                  heights = c(1.10, 1),  labels = c("A", "B"))
-Fig5
-```
-
-
-
-
 
 # Supplemental Figures
 
@@ -2807,8 +2279,8 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 # Metameta_Fig3_male.perc (Figure S2 right panel)
 ```
 
-## Figure 5.1
-Figure \@ref(fig:FigS1) is similar to Figure 4 in the main article.
+## Figure
+Figure \@ref(fig:FigS1) is similar to Figure 3 in the main article.
 
 ```{r FigS1, fig.height = 8, fig.width = 7, fig.cap=" Numbers of either male (blue-green bars) or female (orange-red bars) biased traits  (Panel A) across functional groups, this time for lnCVR (left hand side), lnVR (middle) and lnRR (right hand side). Panel B shows effect sizes from separate meta-analysis for each functional group, and Panel C contains results of heterogeneity analyses. All three panels represent results evaluated across all traits."}
 
@@ -2819,9 +2291,20 @@ FigS1
 #ggsave("FigS1_OverallResults.pdf", plot = FigS1, width = 6, height = 7)
 ```
 
-## Figure 5.2
+## Figure
 
-Figure \@ref(fig:FigS2) is an extension of sex biases, as shown in Figure 5 in the main text. Here, we include data on lnVR (middle panel), as well as athe second method of sex-differences comparison.
+### Sex-bias in traits: Methods and results 
+
+#### Methods
+Among the 147 traits (i.e. with ‘first-order’ meta-analytic results), we found 31 traits to be significantly male-biased and 30 female-biased for lnCVR (47 male-biased and 39 female- biased for lnRR; 74 male and 55 female-biased for lnVR). We used this statistical significance to categorize traits into two groups: male-based and female-biased traits. For each set of these sex-biased traits, we conducted second-order meta-analyses with trait as the unit of analysis in the same way as those using lnRR, lnVR and lnCVR (Figure \@ref(fig:FigG1)J).  As sensitivity analyses, we also employed another way of separating male- and female-biased traits. We quantified traits that were more than 10% biased towards either of the sexes, regardless of significance (N[male-biased] = 31, & N[female-biased] = 36 for lnCVR,  N[male-biased] = 56, & N[female-biased] = 57 for lnVR , N[male-biased] = 42, & N[female-biased] = 33  for lnRR; see Supplemental Figure S\@ref(fig:FigS2), Supplemental Table 7.3).
+
+
+#### Results
+Having established that different sex-biases were present across trait functional groups, we explored specific patterns in male and female bias by categorizing traits into either male or female-biased, and then, quantifying the degree of sex bias. To do this, we focused on only those traits that were significantly biased towards one sex (as indicated by “CI not overlapping 0” in Figure S\@ref(fig:FigS2). Selecting significantly sex-biased traits reduced the number of traits substantially (Figure S\@ref(fig:FigS2)A; compared to all traits, Figure \@ref(fig:Fig3) and Figure \@ref(fig:FigS1)), and returned similar numbers of traits with either significant male- or female-bias for lnCVR (Figure S\@ref(fig:FigS2)A). 
+
+Looking only at traits with significant male-bias, trait variability tended to be higher in males than in females overall (11.77% male bias, lnCVR = 0.111, CI = [0.093 to 0.129]; compared to 8.3% female-bias, lnCVR = -0.087, CI = [-0.109 to (-0.064)]; Figure S\@ref(fig:FigS2)B). The degree of sex-bias varied across the functional trait groups, ranging from 4.6 % (Physiology, lnCVR = -0.047, CI = [-0.064 to (-0.030)] to 15.13 % (Eye morphology, lnCVR = -0.164, CI = [-0.249 to (-0.250)] in females, and from 8.6 % (Hematology, lnCVR = 0.082, CI = [0.048 to 0.117]) and 16.66 % (Heart, lnCVR = 0.154, CI = [0.085 to 0.223]) in males (Figure S\@ref(fig:FigS2)B).
+
+To put sex biases (sexual dimorphisms) in variability into perspective, we also quantify the degree of sexual dimorphism in significantly sex-biased traits (i.e., the extent of sexual dimorphisms). There were more traits that were significantly biased in mean trait value in males compared to females (Figure S\@ref(fig:FigS2)A, lnRR). These traits were 11.73 % biased towards males (Figure S\@ref(fig:FigS2)B; lnRR = 0.111, CI = [0.083 – 0.138]) while 9.38 % towards females (lnRR = -0.094, CI = [-0.129 – (-0.068)]. The overall pattern for lnRR was more varied among the functional trait groups than for lnCVR, ranging from 1.2% (Hematology, lnRR = -0.013, CI = [-0.017 – (-0.007)] to 14.72 % (Immunology, lnRR = -0.159, CI = [-0.229 – (-0.089)] in female-based traits (Figure S\@ref(fig:FigS2)B) whereas in males-based traits from 1.8 % (Hearing, lnRR = 0.018, CI = [0.006 – 0.031]) to 25 % (Metabolism, lnRR = 0.223, CI = [0.110 – 0.335])  (Figure S\@ref(fig:FigS2)B). 
 
 ```{r FigS2, fig.height = 10, fig.width = 8, fig.cap=" A) Differences in numbers of affected traits, in variance (lnCVR and lnVR) and means (lnRR), where there’s a significant difference between the sexes (i.e CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the sex bias in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange-red bars represent trait groups with a female bias, blue-green bars male-biased traits."}
 library(ggpubr)
@@ -2838,7 +2321,450 @@ FigS2
 
 
 # Supplemental Tables
-## Table 6.1
+## Table
+
+```{r Fig5_prep, echo = FALSE, eval = TRUE}
+ meta.plot2.sig <- meta_clean %>%
+                   mutate(lnCVRsig = ifelse(lnCVR_lower * lnCVR_upper > 0, 1, 0), 
+                           lnVRsig = ifelse( lnVR_lower * lnVR_upper  > 0, 1, 0),
+                           lnRRsig = ifelse( lnRR_lower * lnRR_upper  > 0, 1, 0))
+meta.plot2.sig.b <- meta.plot2.sig[, c("lnCVR", "lnRR", "lnCVRsig", "lnVRsig", "lnRRsig", "GroupingTerm")] 
+    meta.plot2.sig.c <- gather(meta.plot2.sig.b, trait, value, lnCVR:lnRR)
+meta.plot2.sig.c$sig <- "placeholder"
+meta.plot2.sig.c$trait <- factor(meta.plot2.sig.c$trait, levels = c("lnCVR", "lnRR")) 
+  meta.plot2.sig.c$sig <- ifelse(meta.plot2.sig.c$trait == "lnCVR", 
+                                 meta.plot2.sig.c$lnCVRsig,
+                                 ifelse(meta.plot2.sig.c$trait == "lnVR", 
+                                        meta.plot2.sig.c$lnVRsig, 
+                                        meta.plot2.sig.c$lnRRsig))
+# Choosing sex biased ln-ratios significantly larger than 0
+meta.plot2.sig.malebias <- meta.plot2.sig.c %>%
+                           group_by_at(vars(trait, GroupingTerm)) %>%
+                           filter(sig == 1) %>%
+                           summarise(male_sig = sum(value > 0), female_sig = sum(value < 0), total = male_sig + female_sig)
+meta.plot2.sig.malebias <- ungroup(meta.plot2.sig.malebias) %>%
+                          # add "Hearing" for lnCVR (not filtered as only zeros)
+                          add_row(trait = "lnCVR", GroupingTerm = "Hearing", male_sig = 0, female_sig = 0, .before = 4) %>% 
+                          mutate(malepercent = male_sig * 100 / total, femalepercent = female_sig * 100 / total)
+meta.plot2.sig.malebias$label <- "CI not overlapping zero"
+# Re-structure to create stacked bar plots
+  meta.plot2.sig.bothsexes <- as.data.frame(meta.plot2.sig.malebias)
+meta.plot2.sig.bothsexes.b <- gather(meta.plot2.sig.bothsexes, key = sex, value = percent, malepercent:femalepercent, factor_key = TRUE)
+# create new sample size variable
+meta.plot2.sig.bothsexes.b$samplesize <- with(meta.plot2.sig.bothsexes.b, ifelse(sex == "malepercent", male_sig, female_sig))
+# Add summary row ('All') and re-arrange rows into correct order for plotting 
+meta.plot2.sig.bothsexes.c <- meta.plot2.sig.bothsexes.b %>% 
+                              group_by(trait, sex) %>% 
+                              summarise(GroupingTerm = "All", 
+                                        male_sig = sum(male_sig), 
+                                        female_sig = sum(female_sig), 
+                                        total = male_sig + female_sig, 
+                                        label = "CI not overlapping zero", 
+                                        samplesize = sum(samplesize)) %>%
+                              mutate(percent = ifelse(sex == "femalepercent", 
+                                                      female_sig*100/(male_sig+female_sig), 
+                                                      male_sig*100/(male_sig+female_sig))) %>%
+                              bind_rows(meta.plot2.sig.bothsexes.b, .) %>%
+                              mutate(rownumber = row_number()) %>%
+                              .[c(37, 1:9, 39, 10:18, 38, 19:27, 40, 28:36), ] 
+  #line references in previous code line corresponding to: 
+  #'lnCVR(male(All)), lnCVR(male('single grouping terms'), lnRR(male(All)), lnRR(male('single grouping terms')),
+  #lnCVR(female(All)), lnCVR(female('single grouping terms'), lnRR(female(All)), lnRR(female('single grouping terms'))'
+meta.plot2.sig.bothsexes.c$GroupingTerm <- factor(meta.plot2.sig.bothsexes.c$GroupingTerm,
+                                                  levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
+                                                             "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All")) 
+meta.plot2.sig.bothsexes.c$GroupingTerm <- factor(meta.plot2.sig.bothsexes.c$GroupingTerm, 
+                                                  rev(levels(meta.plot2.sig.bothsexes.c$GroupingTerm)))
+# Plot Fig2 all significant results (CI not overlapping zero)
+# Several grouping terms are added post-hoc (with no data to display): no significant lnCVR for 'Hearing' in either sex; no sig. male-biased lnCVR for 'Immunology' and 'Eye, and no significant female-biased lnRR for 'Eye'.
+malebias_Fig2_sigtraits <-
+  ggplot(meta.plot2.sig.bothsexes.c) +
+  aes(x = GroupingTerm, y = percent, fill = sex) +
+  ylab("Percentage") +
+  geom_col() +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "gray40") +
+  geom_text(
+    data = subset(meta.plot2.sig.bothsexes.c, samplesize != 0), aes(label = samplesize), position = position_stack(vjust = .5),
+    color = "white", size = 3.5) +
+  facet_grid(cols = vars(trait), 
+             rows = vars(label), 
+             labeller = label_wrap_gen(width = 18),
+             scales = "free", space = "free") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_bw(base_size = 18) +
+  theme(strip.text.y = element_text(angle = 270, size = 10, margin = margin(t = 15, r = 15, b = 15, l = 15)),
+        strip.text.x = element_text(size = 12),
+        strip.background = element_rect(colour = NULL, linetype = "blank", fill = "gray90"),
+        text = element_text(size = 14),
+        panel.spacing = unit(0.5, "lines"),
+        panel.border = element_blank(),
+        axis.line = element_line(),
+        panel.grid.major.x = element_line(linetype = "solid", colour = "gray95"),
+        panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.position = "none",
+        axis.title.y = element_blank()) +
+  coord_flip()
+### Preparation for Plots on significant sex-bias (Second-order meta analysis results)
+#### Figure 5 B - traits with CI not overlapping 0 
+# Prepare data 
+# create column with 1 = different from zero, 0 = zero included in CI
+#### Male-biased (significant) traits:
+meta.male.plot3.sig <- metacombo %>%
+                       mutate(sigCVR = ifelse(lnCVR_lower > 0, 1, 0),
+                               sigVR = ifelse( lnVR_lower > 0, 1, 0),
+                               sigRR = ifelse( lnRR_lower > 0, 1, 0))
+# Significant subset for lnCVR
+metacombo_male.plot3.CVR <- meta.male.plot3.sig    %>%
+                            filter(sigCVR == 1)    %>%
+                            group_by(GroupingTerm) %>%
+                            nest()
+metacombo_male.plot3.CVR.all <- meta.male.plot3.sig %>%
+                                filter(sigCVR == 1) %>%
+                                nest(data = everything())   
+# Significant subset for lnVR
+metacombo_male.plot3.VR <- meta.male.plot3.sig    %>%
+                           filter(sigVR == 1)     %>%
+                           group_by(GroupingTerm) %>%
+                           nest()
+metacombo_male.plot3.VR.all <- meta.male.plot3.sig    %>%
+                               filter(sigVR == 1)     %>%
+                               nest(data = everything())    
+# Significant subset for lnRR
+metacombo_male.plot3.RR <- meta.male.plot3.sig    %>%
+                           filter(sigRR == 1)     %>%
+                           group_by(GroupingTerm) %>%
+                           nest()
+metacombo_male.plot3.RR.all <- meta.male.plot3.sig %>%
+                               filter(sigRR == 1)  %>%
+                               nest(data = everything())   
+# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+plot3.male.meta.CVR <- metacombo_male.plot3.CVR %>%
+                       mutate(model_lnCVR = map(data, 
+                                                ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96), 
+                                              control = list(optimizer = "optim", 
+                                                             optmethod = "Nelder-Mead", 
+                                                             maxit = 1000), 
+                                              verbose = F)))
+plot3.male.meta.VR <- metacombo_male.plot3.VR %>%
+                      mutate(model_lnVR = map(data, 
+                                              ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
+                                            control = list(optimizer = "optim", 
+                                                           optmethod = "Nelder-Mead", 
+                                                           maxit = 1000), 
+                                            verbose = F)))
+plot3.male.meta.RR <- metacombo_male.plot3.RR %>%
+                      mutate(model_lnRR = map(data, 
+                                              ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
+                                              control = list(optimizer = "optim", 
+                                                             optmethod = "Nelder-Mead", 
+                                                             maxit = 1000), 
+                                              verbose = F)))
+# Across all grouping terms #
+plot3.male.meta.CVR.all <- metacombo_male.plot3.CVR.all %>%
+                            mutate(model_lnCVR = map(data,
+                                                     ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96),
+                                                  control = list(optimizer = "optim", 
+                                                                 optmethod = "Nelder-Mead", 
+                                                                 maxit = 1000), 
+                                                  verbose = F)))
+plot3.male.meta.CVR.all <- plot3.male.meta.CVR.all %>% 
+                            mutate(GroupingTerm = "All")
+plot3.male.meta.VR.all <- metacombo_male.plot3.VR.all %>%
+                          mutate(model_lnVR = map(data, 
+                                                  ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
+                                                  control = list(optimizer = "optim", 
+                                                                 optmethod = "Nelder-Mead", 
+                                                                 maxit = 1000), 
+                                                  verbose = F)))
+plot3.male.meta.VR.all <- plot3.male.meta.VR.all %>% 
+                          mutate(GroupingTerm = "All")
+plot3.male.meta.RR.all <- metacombo_male.plot3.RR.all %>%
+                          mutate(model_lnRR = map(data, 
+                                                  ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
+                                                control = list(optimizer = "optim", 
+                                                               optmethod = "Nelder-Mead", 
+                                                               maxit = 1000), 
+                                                verbose = F)))
+plot3.male.meta.RR.all <- plot3.male.meta.RR.all %>% 
+                          mutate(GroupingTerm = "All")
+# Combine with separate grouping term results
+plot3.male.meta.CVR <- bind_rows(plot3.male.meta.CVR, plot3.male.meta.CVR.all)
+ plot3.male.meta.VR <- bind_rows(plot3.male.meta.VR,   plot3.male.meta.VR.all)
+ plot3.male.meta.RR <- bind_rows(plot3.male.meta.RR,   plot3.male.meta.RR.all)
+# **Re-structure data for each grouping term; delete un-used variables
+plot3.male.meta.CVR.b <- as.data.frame(plot3.male.meta.CVR %>% 
+                                       group_by(GroupingTerm) %>%
+                                       mutate( lnCVR = map_dbl(model_lnCVR, pluck(2)), 
+                                               lnCVR_lower = map_dbl(model_lnCVR, pluck(6)), 
+                                               lnCVR_upper = map_dbl(model_lnCVR, pluck(7)), 
+                                               lnCVR_se = map_dbl(model_lnCVR, pluck(3)), 
+                                               lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
+add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA, NA))) %>% 
+                                  setNames(names(plot3.male.meta.CVR.b))
+plot3.male.meta.CVR.b <- bind_rows(plot3.male.meta.CVR.b, add.row.hearing)
+plot3.male.meta.CVR.b <- plot3.male.meta.CVR.b[order(plot3.male.meta.CVR.b$GroupingTerm), ]
+plot3.male.meta.VR.b <- as.data.frame(plot3.male.meta.VR %>% 
+                                      group_by(GroupingTerm) %>%
+                                      mutate(lnVR = map_dbl(model_lnVR, pluck(2)), 
+                                             lnVR_lower = map_dbl(model_lnVR, pluck(6)),
+                                             lnVR_upper = map_dbl(model_lnVR, pluck(7)), 
+                                             lnVR_se = map_dbl(model_lnVR, pluck(3)),
+                                             lnVR_I2 = map_dbl(model_lnVR, pluck("I2"))))[, c(1, 4:8)]
+plot3.male.meta.VR.b <- plot3.male.meta.VR.b[order(plot3.male.meta.VR.b$GroupingTerm), ]
+plot3.male.meta.RR.b <- as.data.frame(plot3.male.meta.RR %>% 
+                                      group_by(GroupingTerm) %>% 
+                                      mutate(lnRR = map_dbl(model_lnRR, pluck(2)), 
+                                             lnRR_lower = map_dbl(model_lnRR, pluck(6)),
+                                             lnRR_upper = map_dbl(model_lnRR, pluck(7)), 
+                                             lnRR_se = map_dbl(model_lnRR, pluck(3)),
+                                             lnRR_I2 = map_dbl(model_lnRR, pluck("I2"))))[, c(1, 4:8)]
+plot3.male.meta.RR.b <- plot3.male.meta.RR.b[order(plot3.male.meta.RR.b$GroupingTerm), ]
+overall.male.plot3 <- full_join(plot3.male.meta.CVR.b, plot3.male.meta.VR.b)
+overall.male.plot3 <- full_join(overall.male.plot3,    plot3.male.meta.RR.b)
+overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
+                                          levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
+                                                     "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
+overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
+                                          rev(levels(overall.male.plot3$GroupingTerm)))
+overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
+                                          levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
+                                                     "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
+overall.male.plot3$GroupingTerm <- factor(overall.male.plot3$GroupingTerm, 
+                                          rev(levels(overall.male.plot3$GroupingTerm)))
+# Restructure MALE data for plotting 
+overall3.male.sig <- gather(overall.male.plot3, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) 
+lnCVR.ci <- overall3.male.sig            %>%
+            filter(parameter == "lnCVR") %>%
+            mutate(ci.low = lnCVR_lower, 
+                   ci.high = lnCVR_upper)
+lnRR.ci <- overall3.male.sig           %>%
+           filter(parameter == "lnRR") %>%
+           mutate(ci.low = lnRR_lower, 
+                 ci.high = lnRR_upper)
+overall4.male.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
+                     select(GroupingTerm, 
+                            parameter, 
+                            value, 
+                            ci.low, 
+                            ci.high) 
+overall4.male.sig$label <- "CI not overlapping zero"
+# Plot Fig 5B all significant results (CI not overlapping zero) for males. This is the right panel in Figure 5B.
+Metameta_Fig3_male.sig <- overall4.male.sig %>%
+  ggplot(aes(y = GroupingTerm, x = value)) +
+  geom_errorbarh(aes(xmin = ci.low,
+                     xmax = ci.high),
+                 height = 0.1, 
+                 show.legend = FALSE) +
+  geom_point(aes(shape = parameter),
+             fill = "mediumaquamarine", 
+             color = "mediumaquamarine", 
+             size = 2.2, 
+             show.legend = FALSE) +
+  scale_x_continuous(limits = c(0, 0.4),
+                     breaks = c(0, 0.3),
+                       name = "Effect size") +
+  geom_vline(xintercept = 0,
+                  color = "black",
+              linetype = "dashed") +
+  facet_grid(cols = vars(parameter), 
+             rows = vars(label),
+             labeller = label_wrap_gen(width = 23),
+             scales = "free",
+             space = "free") +
+  theme_bw() +
+  theme(strip.text.y = element_text(angle = 270, 
+                                    size = 10, 
+                                    margin = margin(t = 15, r = 15, b = 15, l = 15)),
+        strip.text.x = element_text(size = 12),
+        strip.background = element_rect(colour = NULL, 
+                                        linetype = "blank", 
+                                        fill = "gray90"),
+        text = element_text(size = 14),
+        panel.spacing = unit(0.5, "lines"),
+        panel.border = element_blank(),
+        axis.line = element_line(),
+        panel.grid.major.x = element_line(linetype = "solid", 
+                                          colour = "gray95"),
+        panel.grid.major.y = element_line(linetype = "solid", 
+                                          color = "gray95"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.title = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+# Metameta_Fig3_male.sig
+#### Female part, significant traits: Female Fig5B sig
+# as above: Prepare data for traits with CI not overlapping 0
+# create column with 1 = different from zero, 0 = zero included in CI
+# Female-biased traits
+meta.female.plot3.sig <- metacombo %>%
+  mutate(sigCVR = ifelse(lnCVR_upper < 0, 1, 0),
+          sigVR = ifelse(lnVR_upper < 0, 1, 0),
+          sigRR = ifelse(lnRR_upper < 0, 1, 0))
+# Significant subset for lnCVR
+metacombo_female.plot3.CVR <- meta.female.plot3.sig  %>%
+                              filter(sigCVR == 1)    %>%
+                              group_by(GroupingTerm) %>%
+                              nest()
+metacombo_female.plot3.CVR.all <- meta.female.plot3.sig %>%
+                                  filter(sigCVR == 1)   %>%
+                                  nest(data = everything())   
+# Significant subset for lnVR
+metacombo_female.plot3.VR <- meta.female.plot3.sig  %>%
+                             filter(sigVR == 1)     %>%
+                             group_by(GroupingTerm) %>%
+                             nest()
+metacombo_female.plot3.VR.all <- meta.female.plot3.sig  %>%
+                                 filter(sigVR == 1)     %>%
+                                 nest(data = everything())   
+# Significant subset for lnRR
+metacombo_female.plot3.RR <- meta.female.plot3.sig  %>%
+                             filter(sigRR == 1)     %>%
+                             group_by(GroupingTerm) %>%
+                             nest()
+metacombo_female.plot3.RR.all <- meta.female.plot3.sig %>%
+                                 filter(sigRR == 1)    %>%
+                                 nest(data = everything())   
+# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+plot3.female.meta.CVR <- metacombo_female.plot3.CVR %>%
+                         mutate(model_lnCVR = map(data, 
+                                                  ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96),
+                                                  control = list(optimizer = "optim", 
+                                                                 optmethod = "Nelder-Mead", 
+                                                                 maxit = 1000), 
+                                                  verbose = F)))
+plot3.female.meta.VR <- metacombo_female.plot3.VR %>%
+                        mutate(model_lnVR = map(data, ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
+                                                control = list(optimizer = "optim", 
+                                                               optmethod = "Nelder-Mead", 
+                                                               maxit = 1000), 
+                                                verbose = F)))
+plot3.female.meta.RR <- metacombo_female.plot3.RR %>%
+                        mutate(model_lnRR = map(data, ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
+                                                control = list(optimizer = "optim", 
+                                                               optmethod = "Nelder-Mead", 
+                                                               maxit = 1000), 
+                                                verbose = F)))
+# Across all grouping terms #
+plot3.female.meta.CVR.all <- metacombo_female.plot3.CVR.all %>%
+                             mutate(model_lnCVR = map(data, ~ metafor::rma.uni(yi = .x$lnCVR, sei=(.x$lnCVR_upper-.x$lnCVR_lower)/(2 * 1.96),
+                                                       control = list(optimizer = "optim", 
+                                                                      optmethod = "Nelder-Mead", 
+                                                                      maxit = 1000),
+                                                       verbose = F)))
+plot3.female.meta.CVR.all <- plot3.female.meta.CVR.all %>% mutate(GroupingTerm = "All")
+plot3.female.meta.VR.all <- metacombo_female.plot3.VR.all %>%
+  mutate(model_lnVR = map(data, ~ metafor::rma.uni(yi = .x$lnVR, sei = (.x$lnVR_upper - .x$lnVR_lower) / (2 * 1.96),
+                          control = list(optimizer = "optim", 
+                                         optmethod = "Nelder-Mead", 
+                                         maxit = 1000), 
+                          verbose = F)))
+plot3.female.meta.VR.all <- plot3.female.meta.VR.all %>% mutate(GroupingTerm = "All")
+plot3.female.meta.RR.all <- metacombo_female.plot3.RR.all %>%
+                            mutate(model_lnRR = map(data, 
+                                                    ~ metafor::rma.uni(yi = .x$lnRR, sei = (.x$lnRR_upper - .x$lnRR_lower) / (2 * 1.96),
+                                                    control = list(optimizer = "optim", 
+                                                                   optmethod = "Nelder-Mead", 
+                                                                   maxit = 1000), 
+                                                    verbose = F)))
+plot3.female.meta.RR.all <- plot3.female.meta.RR.all %>% 
+                            mutate(GroupingTerm = "All")
+# Combine with separate grouping term results
+plot3.female.meta.CVR <- bind_rows(plot3.female.meta.CVR, plot3.female.meta.CVR.all)
+ plot3.female.meta.VR <- bind_rows(plot3.female.meta.VR,   plot3.female.meta.VR.all)
+ plot3.female.meta.RR <- bind_rows(plot3.female.meta.RR,   plot3.female.meta.RR.all)
+# Re-structure data for each grouping term; delete un-used variables
+plot3.female.meta.CVR.b <- as.data.frame(plot3.female.meta.CVR %>% 
+                                           group_by(GroupingTerm) %>%
+                                          mutate(    lnCVR = map_dbl(model_lnCVR, pluck(2)), 
+                                               lnCVR_lower = map_dbl(model_lnCVR, pluck(6)),
+                                               lnCVR_upper = map_dbl(model_lnCVR, pluck(7)), 
+                                                  lnCVR_se = map_dbl(model_lnCVR, pluck(3)),
+                                                  lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
+add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA,NA))) %>% 
+                                 setNames(names(plot3.female.meta.CVR.b))
+plot3.female.meta.CVR.b <- bind_rows(plot3.female.meta.CVR.b, add.row.hearing)
+plot3.female.meta.CVR.b <- plot3.female.meta.CVR.b[order(plot3.female.meta.CVR.b$GroupingTerm), ]
+plot3.female.meta.VR.b <- as.data.frame(plot3.female.meta.VR %>% 
+                                        group_by(GroupingTerm) %>%
+                                        mutate(      lnVR = map_dbl(model_lnVR, pluck(2)), 
+                                               lnVR_lower = map_dbl(model_lnVR, pluck(6)),
+                                               lnVR_upper = map_dbl(model_lnVR, pluck(7)), 
+                                                  lnVR_se = map_dbl(model_lnVR, pluck(3)),
+                                                  lnVR_I2 = map_dbl(model_lnVR, pluck("I2"))))[, c(1, 4:8)]
+plot3.female.meta.VR.b <- plot3.female.meta.VR.b[order(plot3.female.meta.VR.b$GroupingTerm), ]
+plot3.female.meta.RR.b <- as.data.frame(plot3.female.meta.RR %>% 
+                                        group_by(GroupingTerm) %>%
+                                        mutate(      lnRR = map_dbl(model_lnRR, pluck(2)), 
+                                               lnRR_lower = map_dbl(model_lnRR, pluck(6)), 
+                                               lnRR_upper = map_dbl(model_lnRR, pluck(7)), 
+                                                  lnRR_se = map_dbl(model_lnRR, pluck(3)),
+                                                  lnRR_I2 = map_dbl(model_lnRR, pluck("I2"))))[, c(1, 4:8)]
+plot3.female.meta.RR.b <- plot3.female.meta.RR.b[order(plot3.female.meta.RR.b$GroupingTerm), ]
+overall.female.plot3 <- full_join(plot3.female.meta.CVR.b, plot3.female.meta.VR.b)
+overall.female.plot3 <- full_join(overall.female.plot3, plot3.female.meta.RR.b)
+overall.female.plot3$GroupingTerm <- factor(overall.female.plot3$GroupingTerm, 
+                                            levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", 
+                                                       "Immunology", "Hematology", "Heart", "Hearing", "Eye", "All"))
+overall.female.plot3$GroupingTerm <- factor(overall.female.plot3$GroupingTerm, 
+                                            rev(levels(overall.female.plot3$GroupingTerm)))
+# Re-structuring data for plotting
+overall3.female.sig <- gather(overall.female.plot3, parameter, value, c(lnCVR, lnRR), factor_key = TRUE) 
+lnCVR.ci <- overall3.female.sig %>%
+  filter(parameter == "lnCVR") %>%
+  mutate(ci.low = lnCVR_lower, 
+         ci.high = lnCVR_upper)
+# lnVR.ci <- overall3.female.sig  %>% filter(parameter == "lnVR") %>% mutate(ci.low = lnVR_lower, ci.high = lnVR_upper)
+lnRR.ci <- overall3.female.sig %>%
+  filter(parameter == "lnRR") %>%
+  mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
+overall4.female.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
+                       select(GroupingTerm, parameter, value, ci.low, ci.high) # lnVR.ci,
+overall4.female.sig$label <- "CI not overlapping zero"
+# PLOT preparation for Fig5B: all significant results (CI not overlapping zero, female )
+Metameta_Fig3_female.sig  <- overall4.female.sig %>%
+  ggplot(aes(y = GroupingTerm, x = value)) +
+  geom_errorbarh(aes(
+    xmin = ci.low,
+    xmax = ci.high),
+  height = 0.1, show.legend = FALSE) +
+  geom_point(aes(shape = parameter),
+    fill = "salmon1", color = "salmon1", size = 2.2,
+    show.legend = FALSE) +
+  scale_x_continuous(
+    limits = c(-0.4, 0),
+    breaks = c(-0.3, 0),
+    name = "Effect size") +
+  geom_vline(
+    xintercept = 0,
+    color = "black",
+    linetype = "dashed") +
+  facet_grid(
+    cols = vars(parameter), # rows = vars(label),
+    # labeller = label_wrap_gen(width = 23),
+    scales = "free",
+    space = "free") +
+  theme_bw() +
+  theme(
+    strip.text.y = element_text(angle = 270, size = 10, margin = margin(t = 15, r = 15, b = 15, l = 15)),
+    strip.text.x = element_text(size = 12),
+    strip.background = element_rect(colour = NULL, linetype = "blank", fill = "gray90"),
+    text = element_text(size = 14),
+    panel.spacing = unit(0.5, "lines"),
+    panel.border = element_blank(),
+    axis.line = element_line(),
+    panel.grid.major.x = element_line(linetype = "solid", colour = "gray95"),
+    panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+# Metameta_Fig3_female.sig #(Figure 5B left panel)
+```
 
 ```{r Table1_prep, echo = FALSE, eval = TRUE, results='hide'}
   # Initial checks
@@ -2856,40 +2782,51 @@ FigS2
 ```
 ```{r Table1, message=FALSE}
 
+   pander(ST1, caption = "Table 6.1: Summary of the available numbers of male and female mice from each strain and originating institution.")
 
-         kable(ST1, caption = "Summary of the available numbers of male and female mice from each strain and originating institution.") %>%
-    kable_styling() %>%
-    scroll_box(width = "100%", height = "200px")
+    #kable(ST1, caption = "Summary of the available numbers of male and female mice from each strain and originating institution.") %>%
+    #kable_styling() %>%
+    #pander()
+    #scroll_box(width = "100%", height = "200px")
 
 ```
 
-## Table 6.2
+## Table
 
 ```{r, TableS2}  
 # Table detailing numbers of correlated and uncorrelated traits
-kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (parameter_group) and the number of correlated traits within these categories. Traits were meta-analysed using robumeta") %>%
-  kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
+
+pander(cbind(meta1 %>% count(parameter_group)), caption = "Table 6.2: Trait categories (parameter_group) and the number of correlated traits within these categories. Traits were meta-analysed using robumeta")
+
+#kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (parameter_group) and the number of correlated traits within these categories. Traits were meta-analysed using robumeta") %>%
+  #kable_styling() %>%
+  #scroll_box(width = "100%", height = "200px")
 ```
 
-## Table 6.3
+## Table
 
 ```{r Table3}
-    kable(metacombo, digits = 3, caption = "We use this corrected (for correlated traits) results table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance.") %>%
-    kable_styling() %>%
-    scroll_box(width = "100%", height = "200px")
+
+pander(metacombo, caption = "Table 6.3: We use this corrected (for correlated traits) results table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance.")    
+
+#kable(metacombo, digits = 3, caption = "We use this corrected (for correlated traits) results table, which contains each of the meta-analytic means for all effect sizes of interest, for further analyses.  We further use this table as part of the Shiny App, which is able to provide the percentage differences between males and females for mean, variance and coefficient of variance.") %>%
+  #kable_styling() %>%
+  #scroll_box(width = "100%", height = "200px")
 
 ```
 
-## Table 6.4
+## Table 
 
 ```{r Table4}
-  kable(overall2, digits = 3, caption = "Summary of overall meta-analyses on the functional trait group level (GroupingTerm). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95 percent CI's, standard error and I2 values are provided.") %>%
-   kable_styling() %>%
-  scroll_box(width = "100%", height = "200px")
+
+pander(overall2, caption = "Table 6.4: Summary of overall meta-analyses on the functional trait group level (GroupingTerm). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95 percent CI's, standard error and I2 values are provided.")  
+
+#kable(overall2, digits = 3, caption = "Summary of overall meta-analyses on the functional trait group level (GroupingTerm). Results for lnCVR, lnVR and lnRR and their respective upper and lower 95 percent CI's, standard error and I2 values are provided.") %>%
+ #  kable_styling() %>%
+#  scroll_box(width = "100%", height = "200px")
 ```
 
-## Table 6.5
+## Table
 
 ```{r}
 
@@ -2905,13 +2842,15 @@ kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (para
       mf_sig <- mf_sig %>% 
                 arrange(desc(GroupingTerm))
 
-  kable(mf_sig, digits = 3, caption = "Provides an overview of meta-analysis results performed on traits that were significantly biased towards either sex. This table summarizes findings for both sexes and the respective functional trait groups.") %>%
-    kable_styling() %>%
-    scroll_box(width = "100%", height = "300px")
+    pander(mf_sig, caption = "Table 6.5: Provides an overview of meta-analysis results performed on traits that were significantly biased towards either sex. This table summarizes findings for both sexes and the respective functional trait groups.")  
+      
+  #kable(mf_sig, digits = 3, caption = "Provides an overview of meta-analysis results performed on traits that were significantly biased towards either sex. This table summarizes findings for both sexes and the respective functional trait groups.") %>%
+   # kable_styling() %>%
+  # scroll_box(width = "100%", height = "300px")
 ```
 
 
-## Table 6.6
+## Table
 
 ```{r}
 
@@ -2937,9 +2876,11 @@ kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (para
            RR_higher = ci.h_heteroRR) %>%
     select(1,2,5,8,3,6,9,4,7,10,14,17,20,15,18,21,16,19,22)
 
-  kable(het, digits = 3, caption = "Summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above.") %>%
-    kable_styling() %>%
-    scroll_box(width = "100%", height = "200px")
+  pander(het, caption = "Table 6.6: Summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above.")
+
+  #kable(het, digits = 3, caption = "Summarizes our findings on heterogeneity due to institutions and mouse strains. These results are based on meta-analyses on sigma^2 and errors for mouse strains and centers (Institutions), following the identical workflow from above.") %>%
+   # kable_styling() %>%
+    #scroll_box(width = "100%", height = "200px")
 
 ```
 
@@ -2948,6 +2889,6 @@ kable(cbind(meta1 %>% count(parameter_group)), caption = "Trait categories (para
 # R Session Information
 
 ```{r}
-sessionInfo()
+sessionInfo() %>% pander()
 ```
 
