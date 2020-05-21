@@ -7,7 +7,7 @@ This repository is for analyising a WT mice dataset to test for sex differences 
 2) Do males and females show similar or different biases in trait variance? 
 
 # Datasets
- Unfortunately, the raw data file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to [zenodo.org](10.5281/zenodo.3759701). As such, we have already processed the raw data file and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. This file is used for all further processing and analysis.
+ Unfortunately, the raw data file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to [zenodo.org](https://doi.org/10.5281/zenodo.3759701). As such, we have already processed the raw data file and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. This file is used for all further processing and analysis.
 
 # Re-running analyses
 ## Step 1.
