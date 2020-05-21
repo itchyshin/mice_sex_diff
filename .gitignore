@@ -12,3 +12,4 @@ figure/
 scripts/*.pdf
 scripts/*.docx
 .DS_Store
+*.tex
