@@ -1,14 +1,25 @@
-# mice_sex_diff
+# Code and Data for "Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
 
-This repo is for analyising a WT mice data for analysing sex difference over 200 traits. Our intial questions are two-fold: 1) how much sex difference in variability mice have over these 200 traits and 2) Do males and females differ in allometry?
+# Introduction
+This repository is for analyising a WT mice dataset for analysing sex differences in mean and variance for over 200 traits. Our intial questions are two-fold: 
 
-To analyse the data, download the raw data file `dr7.0_all_control_data.csv` and save it in a file in this folder called `data`. This folder is not tracked by git, as it is too large. 
+1) Do males and females show consistent sex differences / biases in traits?
+2) Do males and females show difference biases in trait variance?
 
-To analyse the data, you'll need to downalod either the raw data or the cleaned data.
+# Datasets
+ Unfortunately, the raw data file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to [zenodo.org](https://zenodo.org/deposit/3759701). As such, we have already processed the raw data file and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. This file is used for all further processing and analysis.
 
-See Scripts with analysis results in folder `scripts`
+# Re-running analyses
+## Step 1.
+If users do not already have `R` and `RStudio` they will need to download both from the [CRAN mirrors](https://cran.r-project.org/mirrors.html) page. Choose the mirror closest to your locatioon and it will link to the `R` download page. Click the version and operating system that is relevant to you. `RStudio` can be downloaded from the [RStudio](https://rstudio.com/products/rstudio/download/) download page. 
 
-Most up to date script is 2019_4June_IMPC variance and sex difference.Rmd (found in 'scripts')   
-Dataset to use is data_clean.rds (in folder 'export' , to follow outline in script).   
-This version runs all the necessary function within the script, so no externally loaded functions necessary    
-(please note: some of the original functions have been changed slightly)
+## Step 2.
+To re-run the analysis users can clone or download the entire respository to their local machine (un-zip the file if downloaded). Click on the 
+`mice_sex_diff.Rproj`. This will open up `RStudio` and set the working directory to the respository. 
+
+## Step 3. 
+Once `Rstudio` is open, navigate the `MouseSexDiffApril20_2020.Rmd` file in the `scripts/` folder. This file has all the relevant code for analyses and provides detailed annotation on how things were done. One can simply walk through the code chunks as they appear, or more easily, just knit the entire document to `html` using `knit to html_document2` in the tab `knit`. Note that, to do this, you need to install the `bookdown` package from CRAN using `install.packages("bookdown")`. Other packages necessary for the scrpt will be loaded using `pacman`. 
+
+# Questions or issues
+If user have any questions or issues in running or understanding the code please contact the authors:
+[Susi Zajitschek](susi.zajitschek@gmail.com) or [Shinichi Nakagawa](s.nakagawa@unsw.edu.au)
