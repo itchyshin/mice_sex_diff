@@ -1,10 +1,10 @@
 # Code and Data for "Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
 
 # Introduction
-This repository is for analyising a WT mice dataset for analysing sex differences in mean and variance for over 200 traits. Our intial questions are two-fold: 
+This repository is for analyising a WT mice dataset to test for sex differences in mean and variance for over 200 traits. Our intial questions were two-fold: 
 
 1) Do males and females show consistent sex differences / biases in traits?
-2) Do males and females show difference biases in trait variance?
+2) Do males and females show similar or different biases in trait variance? 
 
 # Datasets
  Unfortunately, the raw data file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to [zenodo.org](https://zenodo.org/deposit/3759701). As such, we have already processed the raw data file and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. This file is used for all further processing and analysis.
