@@ -6,6 +6,11 @@ author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Bro
   Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
+  bookdown::word_document2:
+    toc: yes
+    toc_depth: 6
+    number_sections: true
+    theme: flatly
   bookdown::pdf_document2:
     toc: yes
     toc_depth: 6
