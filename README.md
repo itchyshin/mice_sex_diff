@@ -6,7 +6,7 @@ This repository is for analyising a WT mice dataset to test for sex differences 
 1) Do males and females show consistent sex differences / biases in traits?
 2) Do males and females show similar or different biases in trait variance? 
 
-The html file (download the file [here](https://github.com/itchyshin/mice_sex_diff/blob/master/Sex%20and%20Power_%20Sexual%20dimorphism%20in%20trait%20variability%20and%20its%20eco-evolutionary%20and%20statistical%20implicationsSI.html), requires local download (i.e "save file") and opening)) provides the most comprehensive overview of our workflow and analyses without having to rerun the analyses yourself.
+The html file (see [here](https://htmlpreview.github.io/?https://github.com/itchyshin/mice_sex_diff/blob/master/Supplement.html), requires local download (i.e "save file") and opening)) provides the most comprehensive overview of our workflow and analyses without having to rerun the analyses yourself.
 
 # Datasets
  Unfortunately, the raw data file can not be provided via Github, as it is too large (274MB). However, it is freely accessible and uploaded to [zenodo.org](https://doi.org/10.5281/zenodo.3759701). As such, we have already processed the raw data file and provide a cleaned up file which is less computationally intensive to deal with. The file has been saved in a folder called `export`. This file is used for all further processing and analysis.
