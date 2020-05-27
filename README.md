@@ -20,7 +20,7 @@ To re-run the analysis users can clone or download the entire respository to the
 `mice_sex_diff.Rproj`. This will open up `RStudio` and set the working directory to the respository. 
 
 ## Step 3. 
-Once `Rstudio` is open, navigate the `MouseSexDiffApril20_2020.Rmd` file in the `scripts/` folder. This file has all the relevant code for analyses and provides detailed annotation on how things were done. One can simply walk through the code chunks as they appear, or more easily, just knit the entire document to `html` using `knit to html_document2` in the tab `knit`. Note that, to do this, you need to install the `bookdown` package from CRAN using `install.packages("bookdown")`. Other packages necessary for the scrpt will be loaded using `pacman`. 
+Once `Rstudio` is open, navigate the `MouseSexDiffVar_05_2020.Rmd` file in the `scripts/` folder. This file has all the relevant code for analyses and provides detailed annotation on how things were done. One can simply walk through the code chunks as they appear, or more easily, just knit the entire document to `html` using `knit to html_document2` in the tab `knit`. Note that, to do this, you need to install the `bookdown` package from CRAN using `install.packages("bookdown")`. Other packages necessary for the scrpt will be loaded using `pacman`. 
 
 # Questions or issues
 If user have any questions or issues in running or understanding the code please contact the authors:
