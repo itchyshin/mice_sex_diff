@@ -13,3 +13,5 @@ scripts/*.pdf
 scripts/*.docx
 .DS_Store
 *.tex
+Mice_Sex_Diff/
+Sex difference/
