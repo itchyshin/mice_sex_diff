@@ -3,7 +3,7 @@
 library(shiny)
 library(shinythemes)
 
-meta_results <- read.csv("./trait_meta_results.csv")
+meta_results <- read.csv("./trait_results.csv")
 procedure_results <- read.csv("./procedure_results.csv")
 GroupingTerm_results <- read.csv("./GroupingTerm_results.csv")
 

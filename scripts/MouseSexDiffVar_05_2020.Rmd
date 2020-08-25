@@ -6,11 +6,10 @@ author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Bro
   Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
-  bookdown::word_document2:
+  html_document:
+    df_print: paged
     toc: yes
-    toc_depth: 6
-    number_sections: true
-    theme: flatly
+    toc_depth: '4'
   bookdown::pdf_document2:
     toc: yes
     toc_depth: 6
@@ -28,10 +27,11 @@ output:
     toc: yes
     toc_depth: 6
     toc_float: yes
-  html_document:
-    df_print: paged
+  bookdown::word_document2:
     toc: yes
-    toc_depth: '4'
+    toc_depth: 6
+    number_sections: true
+    theme: flatly
 subtitle: Electronic Supplementary Material
 always_allow_html: yes
 ---
