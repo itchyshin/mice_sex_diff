@@ -6,10 +6,13 @@ author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Bro
   Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
-  html_document:
-    df_print: paged
+  bookdown::html_document2:
+    code_folding: hide
+    number_sections: yes
+    theme: flatly
     toc: yes
-    toc_depth: '4'
+    toc_depth: 6
+    toc_float: yes
   bookdown::pdf_document2:
     toc: yes
     toc_depth: 6
@@ -20,13 +23,10 @@ output:
     toc_depth: '4'
   html_notebook:
     toc: yes
-  bookdown::html_document2:
-    code_folding: hide
-    number_sections: yes
-    theme: flatly
+  html_document:
+    df_print: paged
     toc: yes
-    toc_depth: 6
-    toc_float: yes
+    toc_depth: '4'
   bookdown::word_document2:
     toc: yes
     toc_depth: 6
@@ -36,7 +36,7 @@ subtitle: Electronic Supplementary Material
 always_allow_html: yes
 ---
 
-```{r packages1, echo = FALSE, eval = TRUE, messages = FALSE}
+```{r packages1, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, messages=FALSE, paged.print=FALSE}
 library(pacman)
 pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr, pander, splus2R)
 ```
@@ -345,10 +345,11 @@ n <- length(unique(data$id))
 # Create dataframe to store results
 results_alltraits_grouping <- 
     data.frame(tibble(id = 1:n, 
-           lnCVR=0, lnCVR_lower=0, lnCVR_upper=0, lnCVR_se=0, 
-            lnVR=0,  lnVR_lower=0,  lnVR_upper=0, lnVR_se=0, 
-            lnRR=0,  lnRR_lower=0,  lnRR_upper=0, lnRR_se=0, 
-           sampleSize=0, trait=0))
+           lnCVR=0, lnCVR_lower=0, lnCVR_upper=0, lnCVR_se=0, lnCVR_I2=0,
+            lnVR=0,  lnVR_lower=0,  lnVR_upper=0, lnVR_se=0, lnVR_I2=0,
+            lnRR=0,  lnRR_lower=0,  lnRR_upper=0, lnRR_se=0, lnRR_I2=0,
+           k=0, trait=0, male_N = 0, female_N=0, min_male_N = 0, max_male_N = 0, mean_male_N = 0,
+              min_female_N = 0, max_female_N = 0, mean_female_N = 0))
 
 for (t in 1:n) {
   tryCatch(
@@ -391,15 +392,28 @@ for (t in 1:n) {
                                verbose = F, data = results)
       
       f <- function(x) unlist(x[c("b", "ci.lb", "ci.ub", "se")])
+      
+      extract_I2 <- function(mod){
+                  sigma2 <- mod$sigma2
+                       w <- mod$vi
+                       k <- mod$k
+                  
+                  sigmaM <- sum(w * (k-1)) / (sum(w)^2 - sum(w^2))
+                  
+                    I2_tot <- round(sum(sigma2) / sum(sigma2 + sigmaM), digits = 3)*100
+                  return(I2_tot)
+      }
 
-      results_alltraits_grouping[t, 2:14] <- c(f(cvr), f(cv), f(means), k=means$k)
-      results_alltraits_grouping[t, 15]   <- unique(results$trait)
+      results_alltraits_grouping[t, c(2:17,19:26)] <- c(f(cvr),lnCVR_I2 = extract_I2(cvr), f(cv), lnVR_I2 = extract_I2(cv), f(means), lnRR_I2 = extract_I2(means), k=means$k, male_N = sum(results$male_n_ind), female_N = sum(results$female_n_ind), min_male_N = min(results$male_n_ind), max_male_N = max(results$male_n_ind), mean_male_N = mean(results$male_n_ind),
+                                                        min_female_N = min(results$female_n_ind), max_female_N = max(results$female_n_ind), mean_female_N = mean(results$female_n_ind))
+      results_alltraits_grouping[t, 18]   <- unique(results$trait)
     },
     error = function(e) {
       cat("ERROR :", t, conditionMessage(e), "\n")
     }
   )
 }
+
 ```
 
 In the above function, we use 'tryCatch' and 'conditionMessage' to prevent the loop from aborting when the first error at row 84 is produced. As convergence in the two listed non-converging cases can't be achieved by sensibly tweaking (other optim etc.), and we only learn about non-convergence in the loop, it is not possible to exclude the traits (N = 2) beforehand.Similarly, there are 8 traits with very low variation, which can not be excluded prior to running the loop.
@@ -411,7 +425,7 @@ Any produced "Warnings" indicate cases where variance components are set to zero
 
 Here we cover Figure \@ref(fig:FigG1)D, removing non-coverging model results and non-informative traits. Procedure names, grouping variables and trait names ("parameter_names") are the merged back together with the results from the metafor analysis above.
  
-```{r cleanMeta1}
+```{r cleanMeta1, results='hide'}
 results_alltraits_grouping2 <- 
   results_alltraits_grouping %>% 
   
@@ -433,6 +447,24 @@ meta_clean <- results_alltraits_grouping2 %>%
 	                       "number of pelvic vertebrae", "number of ribs left","number of ribs right", 
 	                       "number of signals", "number of thoracic vertebrae", "total number of acquired events in panel a",
 	                       "total number of acquired events in panel b", "whole arena permanence"))
+
+# Summary of the cleaned data for 218 traits
+  range(meta_clean$male_N)
+  range(meta_clean$female_N)
+  range(meta_clean$lnCVR_I2)
+  range(meta_clean$lnVR_I2)
+  range(meta_clean$lnRR_I2)
+  range(meta_clean$k)
+  mean(meta_clean$mean_male_N)
+  range(meta_clean$min_male_N)
+  median(meta_clean$mean_male_N)
+  sd(meta_clean$mean_male_N)
+  sd(meta_clean$mean_male_N) / sqrt(length(meta_clean$mean_male_N))
+  mean(meta_clean$mean_female_N)
+  median(meta_clean$mean_female_N)
+  range(meta_clean$min_female_N)
+  sd(meta_clean$mean_female_N)
+  sd(meta_clean$mean_female_N) / sqrt(length(meta_clean$mean_female_N))
 
 ```
 A total of 14 traits from the original 232 that had been included are removed because they either did not achieve convergence or are nonsensical for analysis of variance (such as traits that show no variation, see list below). 
@@ -460,7 +492,7 @@ meta1_sub <- meta1 %>%
   # Add summary of number of parameter names in each parameter group
   group_by(parameter_group) %>%
   mutate(par_group_size = length(unique(parameter_name)), 
-         sampleSize = as.numeric(sampleSize)) %>% 
+         sampleSize = as.numeric(k)) %>% 
   ungroup() %>% 
   # Create subsets with > 1 count (par_group_size > 1)
   filter(par_group_size > 1) # 90 observations
@@ -484,7 +516,7 @@ meta1$par_group_size <- meta1b$par_group_size[match(meta1$parameter_group, meta1
 # Create subsets with > 1 count (par_group_size > 1) 
 
            meta1_sub <- subset(meta1,par_group_size >1) # 90 observations   
-meta1_sub$sampleSize <- as.numeric(meta1_sub$sampleSize)
+meta1_sub$sampleSize <- as.numeric(meta1_sub$k)
 
 # Nesting and meta-analyses on correlated traits, using robumeta
 
@@ -596,7 +628,7 @@ metacombo_final_all <- metacombo %>%
                        nest(data = everything())
 
 
-# Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+# Final random effects meta-analyses within grouping terms, with SE of the estimate
 
 overall1 <- metacombo_final %>%
 
@@ -620,7 +652,7 @@ overall1 <- metacombo_final %>%
                                      maxit = 1000), 
                       verbose = F)))
 
-# Final fixed effects meta-analyses ACROSS grouping terms, with SE of the estimate
+# Final random effects meta-analyses ACROSS grouping terms, with SE of the estimate
 
 overall_all1 <- metacombo_final_all %>%
 
@@ -694,7 +726,7 @@ All <- overall_all1 %>%
 
 All <- All %>% mutate(GroupingTerm = "All")
 
-overall2 <- bind_rows(extract_trait(overall1, "Behaviour"), 
+overall2 <- rbind(extract_trait(overall1, "Behaviour"), 
                       extract_trait(overall1, "Morphology"), 
                       extract_trait(overall1, "Metabolism"), 
                       extract_trait(overall1, "Physiology"), 
@@ -957,7 +989,7 @@ metacombohetero_final <- metacombohetero %>%
   group_by(GroupingTerm) %>%
   nest()
 
-# Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+# Final random effects meta-analyses within grouping terms, with SE of the estimate
 
 heterog1 <- metacombohetero_final %>%
 
@@ -986,7 +1018,7 @@ heterog1 <- metacombohetero_final %>%
 metacombohetero_all_final <- metacombohetero %>%
   nest(data = everything()) 
 
-# Final fixed effects meta-analyses ACROSS grouping terms, with SE of the estimate
+# Final random effects meta-analyses ACROSS grouping terms, with SE of the estimate
 
 heterog1_all <- metacombohetero_all_final %>%
   
@@ -1084,7 +1116,7 @@ heteroRR.ci <-  heterog3 %>%
                 mutate(ci.low = heteroRR_lower, 
                        ci.high = heteroRR_upper)
 
-heterog4 <- bind_rows(heteroCVR.ci, heteroVR.ci, heteroRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+heterog4 <- rbind(heteroCVR.ci, heteroVR.ci, heteroRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
 
 # **Re-order grouping terms
 
@@ -1475,7 +1507,7 @@ metacombo_male.plot3.RR <- meta.male.plot3.sig    %>%
 metacombo_male.plot3.RR.all <- meta.male.plot3.sig %>%
                                filter(sigRR == 1)  %>%
                                nest(data = everything())   
-# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+# **Final random effects meta-analyses within grouping terms, with SE of the estimate
 plot3.male.meta.CVR <- metacombo_male.plot3.CVR %>%
                        mutate(model_lnCVR = map(data, 
                                                 ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96), 
@@ -1539,7 +1571,7 @@ plot3.male.meta.CVR.b <- as.data.frame(plot3.male.meta.CVR %>%
                                                lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
 add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA, NA))) %>% 
                                   setNames(names(plot3.male.meta.CVR.b))
-plot3.male.meta.CVR.b <- bind_rows(plot3.male.meta.CVR.b, add.row.hearing)
+plot3.male.meta.CVR.b <- rbind(plot3.male.meta.CVR.b, add.row.hearing)
 plot3.male.meta.CVR.b <- plot3.male.meta.CVR.b[order(plot3.male.meta.CVR.b$GroupingTerm), ]
 plot3.male.meta.VR.b <- as.data.frame(plot3.male.meta.VR %>% 
                                       group_by(GroupingTerm) %>%
@@ -1579,7 +1611,7 @@ lnRR.ci <- overall3.male.sig           %>%
            filter(parameter == "lnRR") %>%
            mutate(ci.low = lnRR_lower, 
                  ci.high = lnRR_upper)
-overall4.male.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
+overall4.male.sig <- rbind(lnCVR.ci, lnRR.ci) %>% 
                      select(GroupingTerm, 
                             parameter, 
                             value, 
@@ -1663,7 +1695,7 @@ metacombo_female.plot3.RR <- meta.female.plot3.sig  %>%
 metacombo_female.plot3.RR.all <- meta.female.plot3.sig %>%
                                  filter(sigRR == 1)    %>%
                                  nest(data = everything())   
-# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+# **Final random effects meta-analyses within grouping terms, with SE of the estimate
 plot3.female.meta.CVR <- metacombo_female.plot3.CVR %>%
                          mutate(model_lnCVR = map(data, 
                                                   ~ metafor::rma.uni(yi = .x$lnCVR, sei = (.x$lnCVR_upper - .x$lnCVR_lower) / (2 * 1.96),
@@ -1721,7 +1753,7 @@ plot3.female.meta.CVR.b <- as.data.frame(plot3.female.meta.CVR %>%
                                                   lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
 add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA,NA))) %>% 
                                  setNames(names(plot3.female.meta.CVR.b))
-plot3.female.meta.CVR.b <- bind_rows(plot3.female.meta.CVR.b, add.row.hearing)
+plot3.female.meta.CVR.b <- rbind(plot3.female.meta.CVR.b, add.row.hearing)
 plot3.female.meta.CVR.b <- plot3.female.meta.CVR.b[order(plot3.female.meta.CVR.b$GroupingTerm), ]
 plot3.female.meta.VR.b <- as.data.frame(plot3.female.meta.VR %>% 
                                         group_by(GroupingTerm) %>%
@@ -1756,7 +1788,7 @@ lnCVR.ci <- overall3.female.sig %>%
 lnRR.ci <- overall3.female.sig %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
-overall4.female.sig <- bind_rows(lnCVR.ci, lnRR.ci) %>% 
+overall4.female.sig <- rbind(lnCVR.ci, lnRR.ci) %>% 
                        select(GroupingTerm, parameter, value, ci.low, ci.high) # lnVR.ci,
 overall4.female.sig$label <- "CI not overlapping zero"
 # PLOT preparation for Fig5B: all significant results (CI not overlapping zero, female )
@@ -1899,7 +1931,7 @@ lnRR.ci <- overall3.male.sigS %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.male.sigS <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 
@@ -2179,7 +2211,7 @@ lnRR.ci <- overall3.female.sigS %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.female.sigS <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+overall4.female.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
 
 overall4.female.sigS$label <- "CI not overlapping zero"
 
@@ -2274,7 +2306,7 @@ metacombo_plot3.RR.perc.all <- meta.plot3.perc %>%
   nest(data = everything())
 
 
-# **Final fixed effects meta-analyses within grouping terms, with SE of the estimate
+# **Final random effects meta-analyses within grouping terms, with SE of the estimate
 
 plot3.meta.CVR.perc <- metacombo_plot3.CVR.perc %>%
   mutate(model_lnCVR = map(data, ~ metafor::rma.uni(
@@ -2381,7 +2413,7 @@ lnRR.ci <- overall3.perc %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.perc <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+overall4.perc <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
 
 overall4.perc$label <- "Sex difference in m/f ratios > 10%"
 
@@ -2461,7 +2493,7 @@ lnRR.ci <- overall3.male.sigS %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.male.sigS <- bind_rows(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 
@@ -2557,7 +2589,7 @@ metacombo_male.plot3.RR.perc.all <- meta.male.plot3.perc %>%
   nest(data = everything())
 
 
-# Final fixed effects meta-analyses within grouping terms and across grouping terms, with SE of the estimate
+# Final random effects meta-analyses within grouping terms and across grouping terms, with SE of the estimate
 
 plot3.male.meta.CVR.perc <- metacombo_male.plot3.CVR.perc %>%
   mutate(model_lnCVR = map(data, ~ metafor::rma.uni(
@@ -2665,7 +2697,7 @@ lnRR.ci <- overall3.perc %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.male.perc <- bind_rows(lnCVR.ci,lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high) 
+overall4.male.perc <- rbind(lnCVR.ci,lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high) 
 
 overall4.male.perc$label <- "Sex difference in m/f ratios > 10%"
 
