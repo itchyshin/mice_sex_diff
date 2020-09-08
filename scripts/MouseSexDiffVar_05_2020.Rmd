@@ -2213,7 +2213,10 @@ lnRR.ci <- overall3.female.sigS %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
 overall4.female.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
-
+overall4.female.sigS <- overall4.female.sigS %>%
+                          mutate(value = as.numeric(value),
+                                 ci.low = as.numeric(ci.low),
+                                 ci.high = as.numeric(ci.low))
 overall4.female.sigS$label <- "CI not overlapping zero"
 
 # PLOT female-bias:  significant traits
@@ -2494,7 +2497,9 @@ lnRR.ci <- overall3.male.sigS %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% 
+                      select(GroupingTerm, parameter, value, ci.low, ci.high) %>%
+                      mutate(value = as.numeric(value), ci.low = as.numeric(ci.low), ci.high = as.numeric(ci.high))
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 
