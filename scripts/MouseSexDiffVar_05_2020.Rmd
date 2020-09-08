@@ -449,6 +449,7 @@ meta_clean <- results_alltraits_grouping2 %>%
 	                       "total number of acquired events in panel b", "whole arena permanence"))
 
 # Summary of the cleaned data for 218 traits
+  sd(meta_clean$k)
   range(meta_clean$male_N)
   range(meta_clean$female_N)
   range(meta_clean$lnCVR_I2)
