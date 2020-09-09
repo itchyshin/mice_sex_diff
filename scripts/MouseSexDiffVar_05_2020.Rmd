@@ -6,13 +6,10 @@ author: Susanne Zajitschek,  Felix Zajitschek, Russell Bonduriansky, Robert  Bro
   Daniel Noble, & Shinichi Nakagawa
 date: "`r Sys.Date()`"
 output:
-  bookdown::html_document2:
-    code_folding: hide
-    number_sections: yes
-    theme: flatly
+  html_document:
+    df_print: paged
     toc: yes
-    toc_depth: 6
-    toc_float: yes
+    toc_depth: '4'
   bookdown::pdf_document2:
     toc: yes
     toc_depth: 6
@@ -23,10 +20,13 @@ output:
     toc_depth: '4'
   html_notebook:
     toc: yes
-  html_document:
-    df_print: paged
+  bookdown::html_document2:
+    code_folding: hide
+    number_sections: yes
+    theme: flatly
     toc: yes
-    toc_depth: '4'
+    toc_depth: 6
+    toc_float: yes
   bookdown::word_document2:
     toc: yes
     toc_depth: 6
