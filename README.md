@@ -6,7 +6,7 @@ This repository is for analyising a WT mice dataset to test for sex differences 
 1) Do males and females show consistent sex differences / biases in traits?
 2) Do males and females show similar or different biases in trait variance? 
 
-The html file, pblished here https://rpubs.com/SusZaj/ESF, or [download](https://github.com/itchyshin/mice_sex_diff/blob/master/MouseSexDiffVar_Oct_2020.html) (and "save file") to open locally) provides the most comprehensive overview of our workflow and analyses without having to rerun the analyses yourself.
+The html file, published here https://rpubs.com/SusZaj/ESF, or [download](https://github.com/itchyshin/mice_sex_diff/blob/master/MouseSexDiffVar_Oct_2020.html) (and "save file") to open locally) provides the most comprehensive overview of our workflow and analyses without having to rerun the analyses yourself.
 
 The shinyApp to look at male / female bias in means and variablity in traits, procedures and functional groups can be found here: https://szaj.shinyapps.io/SexDifference_Shiny/
 
