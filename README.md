@@ -1,4 +1,5 @@
-# Code and Data for "Sex and Power: Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
+# Code and Data for "Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications"
+## https://elifesciences.org/articles/63170, published online Nov 17, 2020.
 
 # Introduction
 This repository is for analyising a WT mice dataset to test for sex differences in mean and variance for over 200 traits. Our intial questions were two-fold: 
