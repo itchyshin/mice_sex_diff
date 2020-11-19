@@ -1572,7 +1572,7 @@ plot3.male.meta.CVR.b <- as.data.frame(plot3.male.meta.CVR %>%
                                                lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
 add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA, NA))) %>% 
                                   setNames(names(plot3.male.meta.CVR.b))
-plot3.male.meta.CVR.b <- rbind(plot3.male.meta.CVR.b, add.row.hearing) #bind_rows
+plot3.male.meta.CVR.b <- rbind(plot3.male.meta.CVR.b, add.row.hearing) #use bind_rows in R3.6
 plot3.male.meta.CVR.b <- plot3.male.meta.CVR.b[order(plot3.male.meta.CVR.b$GroupingTerm), ]
 plot3.male.meta.VR.b <- as.data.frame(plot3.male.meta.VR %>% 
                                       group_by(GroupingTerm) %>%
@@ -1612,7 +1612,7 @@ lnRR.ci <- overall3.male.sig           %>%
            filter(parameter == "lnRR") %>%
            mutate(ci.low = lnRR_lower, 
                  ci.high = lnRR_upper)
-overall4.male.sig <- rbind(lnCVR.ci, lnRR.ci) %>%  #bind_rows
+overall4.male.sig <- rbind(lnCVR.ci, lnRR.ci) %>%  #use bind_rows in R3.6
                      select(GroupingTerm, 
                             parameter, 
                             value, 
@@ -1741,7 +1741,7 @@ plot3.female.meta.RR.all <- metacombo_female.plot3.RR.all %>%
 plot3.female.meta.RR.all <- plot3.female.meta.RR.all %>% 
                             mutate(GroupingTerm = "All")
 # Combine with separate grouping term results
-plot3.female.meta.CVR <- bind_rows(plot3.female.meta.CVR, plot3.female.meta.CVR.all) #bind_rows
+plot3.female.meta.CVR <- bind_rows(plot3.female.meta.CVR, plot3.female.meta.CVR.all) #use bind_rows in R3.6
  plot3.female.meta.VR <- bind_rows(plot3.female.meta.VR,   plot3.female.meta.VR.all)
  plot3.female.meta.RR <- bind_rows(plot3.female.meta.RR,   plot3.female.meta.RR.all)
 # Re-structure data for each grouping term; delete un-used variables
@@ -1754,7 +1754,7 @@ plot3.female.meta.CVR.b <- as.data.frame(plot3.female.meta.CVR %>%
                                                   lnCVR_I2 = map_dbl(model_lnCVR, pluck("I2"))))[, c(1, 4:8)]
 add.row.hearing <- as.data.frame(t(c("Hearing", NA, NA, NA, NA,NA))) %>% 
                                  setNames(names(plot3.female.meta.CVR.b))
-plot3.female.meta.CVR.b <- rbind(plot3.female.meta.CVR.b, add.row.hearing) #bind_rows
+plot3.female.meta.CVR.b <- rbind(plot3.female.meta.CVR.b, add.row.hearing) #use bind_rows in R3.6
 plot3.female.meta.CVR.b <- plot3.female.meta.CVR.b[order(plot3.female.meta.CVR.b$GroupingTerm), ]
 plot3.female.meta.VR.b <- as.data.frame(plot3.female.meta.VR %>% 
                                         group_by(GroupingTerm) %>%
@@ -1789,7 +1789,7 @@ lnCVR.ci <- overall3.female.sig %>%
 lnRR.ci <- overall3.female.sig %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
-overall4.female.sig <- rbind(lnCVR.ci, lnRR.ci) %>%  #bind_rows
+overall4.female.sig <- rbind(lnCVR.ci, lnRR.ci) %>%  #use bind_rows in R3.6
                        select(GroupingTerm, parameter, value, ci.low, ci.high) # lnVR.ci,
 overall4.female.sig$label <- "CI not overlapping zero"
 # PLOT preparation for Fig5B: all significant results (CI not overlapping zero, female )
@@ -1932,7 +1932,7 @@ lnRR.ci <- overall3.male.sigS %>%
   filter(parameter == "lnRR") %>%
   mutate(ci.low = lnRR_lower, ci.high = lnRR_upper)
 
-overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high) #bind_rows
+overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high) #use bind_rows in R3.6
 
 overall4.male.sigS$label <- "CI not overlapping zero"
 
@@ -2501,7 +2501,7 @@ lnRR.ci <- overall3.male.sigS %>%
 
 overall4.male.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high) %>% 
   mutate(value = as.numeric(value), ci.low = as.numeric(ci.low), ci.high = as.numeric(ci.high))
-# may require: 	
+# R 3.6: do not use "%>% mutate(value = as.numeric(value), ci.low = as.numeric(ci.low), ci.high = as.numeric(ci.high))"
 overall4.male.sigS$label <- "CI not overlapping zero"
 
 
