@@ -2217,7 +2217,7 @@ overall4.female.sigS <- rbind(lnCVR.ci, lnVR.ci, lnRR.ci) %>% select(GroupingTer
 overall4.female.sigS <- overall4.female.sigS %>%
                           mutate(value = as.numeric(value),
                                  ci.low = as.numeric(ci.low),
-                                 ci.high = as.numeric(ci.low))
+                                 ci.high = as.numeric(ci.high))
 
 overall4.female.sigS$label <- "CI not overlapping zero"
 
@@ -2805,7 +2805,7 @@ FigS2d <- ggarrange(Metameta_Fig3_female.perc, Metameta_Fig3_male.perc,
 # end combination Figure 5
 FigS2 <- ggarrange(malebias_FigS2_sigtraits, malebias_Fig2_over10, FigS2b, FigS2d, ncol = 1, nrow = 4, heights = c(2.5, 2.2, 2.1, 2), labels = c("A", " ", "B", " "))
 FigS2
-ggsave("Figure4_2.pdf", plot = FigS2, width = 6, height = 7)
+ggsave("Figure4_2.pdf", plot = FigS2, width = 8, height = 9)
 ```
 
 
