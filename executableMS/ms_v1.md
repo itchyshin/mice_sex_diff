@@ -11,7 +11,6 @@ authors:
   - Alistair M Senior
   - Daniel WA Noble
   - Shinichi Nakagawa
-  affiliations: 
   - Evolution & Ecology Research Center, School of Biological, Earth, and Environmental Sciences, University of New South Wales, Sydney, Australia; 
   - Liverpool John Moores University, School of Biological and Environmental Sciences, Liverpool, United Kingdom; 
   - European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 
