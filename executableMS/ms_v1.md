@@ -11,14 +11,15 @@ authors:
   - Alistair M Senior
   - Daniel WA Noble
   - Shinichi Nakagawa
----
-    
- affiliations: 
+  affiliations: 
   - Evolution & Ecology Research Center, School of Biological, Earth, and Environmental Sciences, University of New South Wales, Sydney, Australia; 
   - Liverpool John Moores University, School of Biological and Environmental Sciences, Liverpool, United Kingdom; 
   - European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 
   - University of Sydney, Charles Perkins Centre, School of Life and Environmental Sciences, School of Mathematics and Statistics, Sydney, Australia; 
   - Division of Ecology and Evolution, Research School of Biology, Australian National University, Canberra, Australia
+
+---
+    
 
 
 # Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications
