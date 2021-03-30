@@ -1,9 +1,26 @@
+---
+authors:
+  - Susanne RK Zajitschek
+  - Felix Zajitschek
+  - Russell Bonduriansky
+  - Robert C Brooks
+  - Will Cornwell
+  - Daniel S Falster
+  - Malgorzata Lagisz
+  - Jeremy Mason
+  - Alistair M Senior
+  - Daniel WA Noble
+  - Shinichi Nakagawa
+    
+ affiliations: 
+  - Evolution & Ecology Research Center, School of Biological, Earth, and Environmental Sciences, University of New South Wales, Sydney, Australia; 
+  - Liverpool John Moores University, School of Biological and Environmental Sciences, Liverpool, United Kingdom; 
+  - European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 
+  - University of Sydney, Charles Perkins Centre, School of Life and Environmental Sciences, School of Mathematics and Statistics, Sydney, Australia; 
+  - Division of Ecology and Evolution, Research School of Biology, Australian National University, Canberra, Australia
+---
+
 # Sexual dimorphism in trait variability and its eco-evolutionary and statistical implications
-
-Susanne RK Zajitschek1,2*, Felix Zajitschek1, Russell Bonduriansky1,
-Robert C Brooks1, Will Cornwell1, Daniel S Falster1, Malgorzata Lagisz1, Jeremy Mason3, Alistair M Senior4, Daniel WA Noble1,5†, Shinichi Nakagawa1†*
-
-1Evolution & Ecology Research Center, School of Biological, Earth, and Environmental Sciences, University of New South Wales, Sydney, Australia; 2Liverpool John Moores University, School of Biological and Environmental Sciences, Liverpool, United Kingdom; 3European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 4University of Sydney, Charles Perkins Centre, School of Life and Environmental Sciences, School of Mathematics and Statistics, Sydney, Australia; 5Division of Ecology and Evolution, Research School of Biology, Australian National University, Canberra, Australia
 
 ## Abstract 
 Biomedical and clinical sciences are experiencing a renewed interest in the fact that males and females differ in many anatomic, physiological, and behavioural traits. Sex differences in trait variability, however, are yet to receive similar recognition. In medical science, mammalian females are assumed to have higher trait variability due to estrous cycles (the ‘estrus-mediated variability hypothesis’); historically in biomedical research, females have been excluded for this reason. Contrastingly, evolutionary theory and associated data support the ‘greater male variability hypothesis’. Here, we test these competing hypotheses in 218 traits measured in >26,900 mice, using meta-analysis methods. Neither hypothesis could universally explain patterns in trait variability. Sex bias in variability was trait-dependent. While greater male variability was found in morphological traits, females were much more variable in immunological traits. Sex-specific variability has eco-evolutionary ramifications, including sex-dependent responses to climate change, as well as statistical implications including power analysis considering sex difference in variance.
