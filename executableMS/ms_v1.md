@@ -16,7 +16,7 @@ authors:
   - European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 
   - University of Sydney, Charles Perkins Centre, School of Life and Environmental Sciences, School of Mathematics and Statistics, Sydney, Australia; 
   - Division of Ecology and Evolution, Research School of Biology, Australian National University, Canberra, Australia
-
+bibliography: SexDiffBib.bib
 ---
     
 
