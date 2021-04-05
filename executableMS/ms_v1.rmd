@@ -31,7 +31,7 @@ When comparing the sexes, biologists generally focus on mean differences in trai
 
 
  this stupid figure has to get embedded    
- ![Fig1](/Figures/Figure 1.png)
+ ![Fig1](/Figures/Figure%201.png)
  
 
 
