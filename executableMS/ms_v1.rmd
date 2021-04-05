@@ -31,15 +31,15 @@ When comparing the sexes, biologists generally focus on mean differences in trai
 
 
  this stupid figure has to get embedded    
- Fig (/Figures/Figure 1.png)
+ ![Fig1](https://github.com/itchyshin/mice_sex_diff/edit/master/executableMS/Figures/Figure 1.png)
  
 ```{r Fig1, echo = FALSE, fig.width = 4, fig.height = 8, fig.cap=Figure 1]"}
 include_graphics(here("Figures", "Figure 1.png"))
 ```
 
 First, the ‘estrus-mediated variability hypothesis’ (Figure 2), which emerged in the (bio-)medical research field, assumes that the female estrous cycle (see e.g. Prendergast et al., 2014; Beery and Zucker, 2011) causes higher variability across traits in female subjects. A wide range of labile traits are presumed to co-vary with physiological changes that are induced by reproductive hormones. High variability is, therefore, expected to be particularly prominent when the stage of the estrous cycle is unknown and unaccounted for. This higher trait variability, resulting from females being at different stages of their estrous cycle, is the main reason for why female research subjects are often excluded from biomedical research trials, especially in the fields of neuroscience, physiology and pharmacology (NIH, 2015a). Female exclusion has traditionally been justified based on the grounds that including females in empirical research leads to a loss of statistical power, or that animals must be sampled across the estrous cycle for one to make valid conclusions, requiring more time and resources.    
- 
- (/Figures/Figure 2.png)
+
+ ![Fig2](https://github.com/itchyshin/mice_sex_diff/edit/master/executableMS/Figures/Figure 2.png)
  ```{r Fig2, echo = FALSE, fig.width = 4, fig.height = 4, fig.cap=Figure 2]"}
 include_graphics(here("Figures", "Figure 2.png"))
 ```  
