@@ -31,7 +31,7 @@ When comparing the sexes, biologists generally focus on mean differences in trai
 
 
  this stupid figure has to get embedded    
- ![Fig1](https://github.com/itchyshin/mice_sex_diff/edit/master/executableMS/Figures/Figure%201..png)
+ ![Fig1](/Figures/Figure 1.png)
  
 
 
