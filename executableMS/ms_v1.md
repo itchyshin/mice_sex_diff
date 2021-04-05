@@ -336,6 +336,7 @@ All <- overall_all1 %>%
                   lnRR_se = .[[4]][[1]]$se,  
                   lnRR_I2 = .[[4]][[1]]$I2,)  %>%
        select(., lnCVR:lnRR_I2)
+       
 All <- All %>% mutate(GroupingTerm = "All")
 
 overall2 <- bind_rows(extract_trait(overall1, "Behaviour"), 
@@ -353,11 +354,11 @@ meta_clean$GroupingTerm <- factor(meta_clean$GroupingTerm,
                                   levels = c("Behaviour", "Morphology", "Metabolism", "Physiology", "Immunology", "Hematology", "Heart", "Hearing", "Eye"))
 meta_clean$GroupingTerm <- factor(meta_clean$GroupingTerm, 
                                   rev(levels(meta_clean$GroupingTerm)))
-# *Preparing data for all traits
+#Preparing data for all traits
 meta.plot2.all <- meta_clean %>%
                   select(lnCVR, lnVR, lnRR, GroupingTerm) %>%
                   arrange(GroupingTerm)
-# lnVR has been removed here and in the steps below, as this is only included in the supplemental figure
+#lnVR has been removed here and in the steps below, as this is only included in the supplemental figure
       meta.plot2.all.b <- gather(meta.plot2.all, trait, value, c(lnCVR, lnRR)) 
 meta.plot2.all.b$trait <- factor(meta.plot2.all.b$trait, levels = c("lnCVR", "lnRR")) 
       meta.plot2.all.c <- meta.plot2.all.b %>%
@@ -506,6 +507,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
   annotation_custom(rasterGrob(male), xmin = 0.1, xmax = 0.2, ymin = 2.3, ymax = 4)
 
 ```
+blah blah 
 
 ```{r Fig3, fig.cap = "Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Figure 1.1D. Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure1.1). Both panels represent results evaluated across all traits. Traits that are male biased are shown in blue, whereas female bias data is represented in orange.[Figure 4 in manuscript]"}
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(10, 9), labels = c("A", "B"))
