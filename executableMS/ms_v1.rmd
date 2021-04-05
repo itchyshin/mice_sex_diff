@@ -33,7 +33,8 @@ Sex differences arise because selection acts on the two sexes differently, espec
 When comparing the sexes, biologists generally focus on mean differences in trait values, placing little or no emphasis on sex differences in trait variability (see Figure 1 for a diagram explaining differences in means and variances). Despite this, two hypotheses exist that explain why trait variability might be expected to differ between the sexes. Interestingly, these two hypotheses make opposing predictions.  
 
 
- this stupid figure has to get embedded ![Fig1] (./executableMS/Figures/Figure 1.png)
+ this stupid figure has to get embedded    
+ ![Fig1](./executableMS/Figures/Figure 1.png)
  
  
 
