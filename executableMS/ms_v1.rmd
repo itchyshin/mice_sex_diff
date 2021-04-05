@@ -507,6 +507,7 @@ Metameta_Fig3_alltraits <- overall4 %>%
   annotation_custom(rasterGrob(male), xmin = 0.1, xmax = 0.2, ymin = 2.3, ymax = 4)
 
 ```
+
 blah blah 
 
 ```{r Fig3, fig.cap = "Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Figure 1.1D. Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure1.1). Both panels represent results evaluated across all traits. Traits that are male biased are shown in blue, whereas female bias data is represented in orange.[Figure 4 in manuscript]"}
