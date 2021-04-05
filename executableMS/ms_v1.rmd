@@ -31,14 +31,14 @@ When comparing the sexes, biologists generally focus on mean differences in trai
 
 
  this stupid figure has to get embedded    
- ![Fig1](./executableMS/Figures/Figure 1.png)
+ ![Fig1](/Figures/Figure 1.png)
  
  
 
 
 First, the ‘estrus-mediated variability hypothesis’ (Figure 2), which emerged in the (bio-)medical research field, assumes that the female estrous cycle (see e.g. Prendergast et al., 2014; Beery and Zucker, 2011) causes higher variability across traits in female subjects. A wide range of labile traits are presumed to co-vary with physiological changes that are induced by reproductive hormones. High variability is, therefore, expected to be particularly prominent when the stage of the estrous cycle is unknown and unaccounted for. This higher trait variability, resulting from females being at different stages of their estrous cycle, is the main reason for why female research subjects are often excluded from biomedical research trials, especially in the fields of neuroscience, physiology and pharmacology (NIH, 2015a). Female exclusion has traditionally been justified based on the grounds that including females in empirical research leads to a loss of statistical power, or that animals must be sampled across the estrous cycle for one to make valid conclusions, requiring more time and resources.    
 
-![Fig2](./executableMS/Figures/Figure 2.png)
+![Fig2](/Figures/Figure 2.png)
    
 
 Second, the ‘greater male variability hypothesis’ suggests males exhibit higher trait variability because of two different mechanisms. The first mechanism is based on males being the heteroga- metic sex in mammals. Mammalian females possess two X chromosomes, leading to an ‘averaging’ of trait expression across the genes on each chromosome. In contrast, males exhibit greater variance because expression of genes on a single X chromosome is likely to lead to more extreme trait values (Reinhold and Engqvist, 2013). The second mechanism is based on males being under stronger sex- ual selection (Pomiankowski and Moller, 1995; Cuervo and Møller, 1999; Cuervo and Møller,2001). Empirical evidence supports higher variability of traits that are sexually selected, often har- bouring high genetic variance and being condition-dependent, which makes sense as ‘condition’ as a trait is likely to be based on numerous loci (Rowe and Houle, 1996; Tomkins et al., 2004). Thus, higher genetic and, thus, phenotypic variance resulting from sexual selection is expected to charac- terise sexually selected traits. In mammals, it is likely that both mechanisms are operating concomi- tantly. So far, the ‘greater male variability hypothesis’ has gained some support in the evolutionary and psychological literature (Reinhold and Engqvist, 2013; Lehre et al., 2009).
