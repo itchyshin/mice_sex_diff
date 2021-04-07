@@ -89,7 +89,7 @@ library(robumeta)
 Loading data & functions
 ```{r}
 data <- readRDS(github://itchyshin/mice_sex_diff/export/data_clean.rds) 
-procedures <- read_csv(github://itchyshin/mice_sex_diff/export/procedures.csv)
+procedures <- read_csv(github://itchyshin/mice_sex_diff/data/procedures.csv)
 n <- length(unique(data$id))
 
 # loads the raw data, setting some default types for various columns
@@ -123,7 +123,7 @@ load_raw <- function(filename) {
 # Apply some standard cleaning to the data
 clean_raw_data <- function(mydata) {
   
-  group <- read_csv(here("data", "ParameterGrouping.csv"))
+  group <- read_csv((github://itchyshin/mice_sex_diff/data/ParameterGrouping.csv)
   
   tmp <- 
     mydata %>%
