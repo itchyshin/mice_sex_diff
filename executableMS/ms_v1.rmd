@@ -37,45 +37,7 @@ When comparing the sexes, biologists generally focus on mean differences in trai
 The orange shading represents females (F), turquoise shading stands for males (M). The solid circle represents a mean trait value within the respective group. Solid lines represent standard deviation, with upper and lower bounds indicated by diamond shapes. Below, we present three types of effect sizes that can be used for comparing two groups, along with the respective formulas and interpretations. Compared to lnVR (the ratio of SD), lnCVR (the ratio of CV or relative variance) provides a more general measure of the difference in variability between two groups (mean-adjusted variability ratio).
  
  ## Figure 1—figure supplement 1 
- this code doesn't make sense here - as it needs all the code that's introduced later
- ```{r FigCor, fig.height=3, message = FALSE, fig.cap= "Mean-variance relationships (log(Mean) vs log(SD, standard deviation)) across all traits for males (A) and females (B).[Figure 1-figure supplement 1 in manuscript]"}
-# First, clean up the data
- results <- data %>%
-            group_by(population,
-             production_center,  
-             strain_name,  
-             parameter_name,
-             sex) %>%
-    summarise(trait  = parameter_name[1],
-              x_bar  = mean(data_point, na.rm = TRUE),
-              x_sd   =   sd(data_point, na.rm = TRUE),
-              n_ind  = n()) %>%
-    ungroup() %>%
-    filter(n_ind > 5) %>%   # NOTE here that you are excluding data with 5 exactly....
-    group_by(population) %>%
-    filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
-    multi_spread(sex, c(x_bar, x_sd, n_ind)) %>%
-    mutate(lnMean_m = log(male_x_bar),
-           logSD_m  = log(male_x_sd),
-           lnMean_f = log(female_x_bar),
-           lnSD_f   = log(female_x_sd)) %>%
-    filter(!is.na(logSD_m) & !is.inf(logSD_m)) %>%
-    filter(!is.na(lnSD_f) & !is.inf(lnSD_f))
-                 
-male <- ggplot(results, aes(x = lnMean_m, y = logSD_m)) +
-    geom_point(color = "#66C2A5", size = 2) +
-   geom_smooth(method = "lm", se = FALSE, color="black") + 
-    labs(x = "log (Mean)",
-         y = "log (SD)") + 
-    theme_classic()
-female <- ggplot(results, aes(x = lnMean_f, y = lnSD_f)) +
-    geom_point(color = "#FC8D62", size = 2) +
-  geom_smooth(method = "lm", se = FALSE, color="black")+
-    labs(x = "log (Mean)",
-         y = "log (SD)") + 
-    theme_classic()
-ggarrange(male, female, ncol = 2, nrow = 1, labels = c("A", "B"))
-```
+ 
  ![Fig1sup](./Figures/Figure1sup.png)
  
  ### Mean-variance relationships (log(Mean) vs log(SD, standard deviation)) across all traits for males (A) and females (B).
@@ -85,7 +47,7 @@ First, the ‘estrus-mediated variability hypothesis’ (Figure 2), which emerge
 ## Figure 2
  ![Fig2](./Figures/Figure2.png)
  
-## The two hypotheses (‘greater male variability’ versus ‘estrus-mediated variability’) have different predictions on how variabilities influence total observed phenotypic variance (Vtotal in the figure).
+### The two hypotheses (‘greater male variability’ versus ‘estrus-mediated variability’) have different predictions on how variabilities influence total observed phenotypic variance (Vtotal in the figure).
 For greater male variability, the within-subject (or within-trait) variation Vwithin could be potentially negligible or is equal in males and females. This is illustrated as the shaded distributions around each individual mean (dashed vertical lines), which are of equal area for the males (turquoise) and females (orange). The greater value of Vtotal is driven by wider distribution of mean trait values in males compared to females (i.e. Vbetween, represented by a thick horizontal bar). The estrus-mediated variability hypothesis, in contrast, assumes that within-subject [or within-trait] variability is much higher in females than in males (broader orange-shaded trait distributions than turquoise distributions), while the variability of the means between individuals stays the same (thick horizontal bars).
  
 
@@ -119,13 +81,14 @@ library(ggplot2)
 library(png)
 library(grid)
 library(splus2R)
+library(metafor)
+library(robumeta)
 
-# missing for meta-analysis: metafor, robumeta
 # pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr, pander, splus2R)
 ```
 Loading data & functions
 ```{r}
-data <- readRDS(github://itchyshin/mice_sex_diff/export/data_clean.rds) 
+data <- readRDS(data_clean.rds) 
 procedures <- read_csv(github://itchyshin/mice_sex_diff/export/procedures.csv)
 n <- length(unique(data$id))
 
@@ -276,7 +239,7 @@ create_meta_analysis_effect_sizes <- function(mydata, measure = c("CVR", "VR", "
 
 ```
 
-```{r metaanlysis prep, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, messages=FALSE, paged.print=FALSE}
+```{r metaanalysis prep, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, messages=FALSE, paged.print=FALSE}
 # Create dataframe to store results
 results_alltraits_grouping <- 
     data.frame(tibble(id = 1:n, 
@@ -739,7 +702,9 @@ Panel (A) shows the numbers of traits that are either male-biased (turquoise) or
 
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(10, 9), labels = c("A", "B"))
 Fig4
+
 ```
+
 ## Figure 4—figure supplement 1
 ```{r code for heterogeneity}
 ### Preparing heterogeneity
@@ -1122,7 +1087,10 @@ Fig4S1
 
 ```
 
-## ## Figure 4—figure supplement 2
+
+
+## Figure 4—figure supplement 2
+
 ```{r Fig4S2_prep, echo = FALSE, eval = TRUE}
  meta.plot2.sig <- meta_clean %>%
                    mutate(lnCVRsig = ifelse(lnCVR_lower * lnCVR_upper > 0, 1, 0), 
@@ -1563,10 +1531,7 @@ Metameta_Fig3_female.sig  <- overall4.female.sig %>%
     axis.title.x = element_blank(),
     axis.title.y = element_blank()
   )
-# Metameta_Fig3_female.sig #(Figure 5B left panel)
-```
 
-```{r FigS1_prep, echo = FALSE, eval = TRUE}
 ### Preparing the data
 #The supplemental figures include lnVR (in addition to lnCVR and lnRR, as presented in Figures 4 and 5)
 
@@ -2483,8 +2448,9 @@ Metameta_Fig3_male.perc <- overall4.male.perc %>% # filter(., GroupingTerm != "H
 # Metameta_Fig3_male.perc (Figure S2 right panel)
 ```
 
-```{r Fig4S1, fig.height = 8, fig.width = 7, fig.cap=" Percentages and numbers of either male (turqoise bars) or female (orange bars) biased traits (Panel A) across functional groups, this time for lnCVR (left hand side), lnVR (middle) and lnRR (right hand side).
-Panel B shows effect sizes from separate meta-analysis for each functional group, and Panel C contains results of heterogeneity analyses. All three panels represent results evaluated across all traits.}
+
+```{r Fig4S1, fig.height = 8, fig.width = 7, fig.cap=" "**Sex bias in trait groups for lnCVR, lnVR and lnRR.**
+(A) Percentages and numbers of affected traits, for variance (lnCVR and lnVR) and means (lnRR), where there is a significant difference between the sexes (i.e. CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the effect size magnitudes in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange bars represent trait groups with a female bias, turqouise bars male-biased traits."}
 
 #### Combined Figure 4S1: overall Count data, Meta anlysis results, Heterogeneity
 
@@ -2492,19 +2458,6 @@ Fig4S1 <- ggarrange(malebias_FigS1_alltraits, Metameta_FigS1_alltraits, HeteroS1
 Fig4S1
 
 ```
-
-
-## Figure 4—figure supplement 2
-```{r code for sex bias}
-
-```
-
-```{r fig.cap = "**Sex bias in trait groups for lnCVR, lnVR and lnRR.**
-(A) Percentages and numbers of affected traits, for variance (lnCVR and lnVR) and means (lnRR), where there is a significant difference between the sexes (i.e. CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the effect size magnitudes in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange bars represent trait groups with a female bias, turqouise bars male-biased traits."}
-
-
-```
-
 
 
 
