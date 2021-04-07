@@ -16,6 +16,7 @@ authors:
   - European Bioinformatics Institute (EMBL- EBI), European Molecular Biology Laboratory, Wellcome Trust Genome Campus, Hinxton, United Kingdom; 
   - University of Sydney, Charles Perkins Centre, School of Life and Environmental Sciences, School of Mathematics and Statistics, Sydney, Australia; 
   - Division of Ecology and Evolution, Research School of Biology, Australian National University, Canberra, Australia
+bibliography: SexDiff.bib
 ---
     
 
@@ -26,38 +27,256 @@ authors:
 Biomedical and clinical sciences are experiencing a renewed interest in the fact that males and females differ in many anatomic, physiological, and behavioural traits. Sex differences in trait variability, however, are yet to receive similar recognition. In medical science, mammalian females are assumed to have higher trait variability due to estrous cycles (the ‘estrus-mediated variability hypothesis’); historically in biomedical research, females have been excluded for this reason. Contrastingly, evolutionary theory and associated data support the ‘greater male variability hypothesis’. Here, we test these competing hypotheses in 218 traits measured in >26,900 mice, using meta-analysis methods. Neither hypothesis could universally explain patterns in trait variability. Sex bias in variability was trait-dependent. While greater male variability was found in morphological traits, females were much more variable in immunological traits. Sex-specific variability has eco-evolutionary ramifications, including sex-dependent responses to climate change, as well as statistical implications including power analysis considering sex difference in variance.
 
 ## Introduction
-Sex differences arise because selection acts on the two sexes differently, especially on traits associated with mating and reproduction (Darwin, 1871). Therefore, sex differences are widespread, a fact which is unsurprising to any evolutionary biologist. However, scientists in many (bio-)medical fields have not necessarily regarded sex as a biological factor of intrinsic interest (Clayton, 2016; Flanagan, 2014; Karp et al., 2017; Klein et al., 2015; Prendergast et al., 2014; Shansky and Woolley, 2016). Therefore, many (bio-)medical studies have only been conducted with male subjects. Consequently, our knowledge is biased. For example, we know far more about drug efficacy in male compared to female subjects, contributing to a poor understanding of how the sexes respond differently to medical interventions (Nowogrodzki, 2017). This gap in knowledge is predicted to lead to overmedication and adverse drug reactions in women (Zucker and Prendergast, 2020). Only recently have (bio-)medical scientists started considering sex differences in their research (Dorris et al., 2015; Ingvorsen et al., 2017; Robinson et al., 2017; Smarr et al., 2017;Ahmad et al., 2017; Foltin and Evans, 2018; Thompson et al., 2018). Indeed, the National Insti- tutes of Health (NIH) have now implemented new guidelines for animal and human research study designs, requiring that sex be included as a biological variable (Clayton, 2016; Clayton and Collins, 2014; NIH, 2015a). 
+Sex differences arise because selection acts on the two sexes differently, especially on traits associated with mating and reproduction (@darwin1871) (Darwin, 1871). Therefore, sex differences are widespread, a fact which is unsurprising to any evolutionary biologist. However, scientists in many (bio-)medical fields have not necessarily regarded sex as a biological factor of intrinsic interest (@clayton2016; @flanagan2014; @karp2017; @klein2015; @prendergast2014; @shansky2016) (Clayton, 2016; Flanagan, 2014; Karp et al., 2017; Klein et al., 2015; Prendergast et al., 2014; Shansky and Woolley, 2016). Therefore, many (bio-)medical studies have only been conducted with male subjects. Consequently, our knowledge is biased. For example, we know far more about drug efficacy in male compared to female subjects, contributing to a poor understanding of how the sexes respond differently to medical interventions (@nowogrodzki2017)(Nowogrodzki, 2017). This gap in knowledge is predicted to lead to overmedication and adverse drug reactions in women (@zucker2020) (Zucker and Prendergast, 2020). Only recently have (bio-)medical scientists started considering sex differences in their research (@dorris2015; @ingvorsen2017; @robinson2017; @smarr2017; @ahmad2017; @foltin2018; @thompson2018)(Dorris et al., 2015; Ingvorsen et al., 2017; Robinson et al., 2017; Smarr et al., 2017;Ahmad et al., 2017; Foltin and Evans, 2018; Thompson et al., 2018). Indeed, the National Insti- tutes of Health (NIH) have now implemented new guidelines for animal and human research study designs, requiring that sex be included as a biological variable (@clayton2016; @clayton2014; @nih2015a) (NIH, 2015a(Clayton, 2016; Clayton and Collins, 2014; NIH, 2015a). 
 When comparing the sexes, biologists generally focus on mean differences in trait values, placing little or no emphasis on sex differences in trait variability (see Figure 1 for a diagram explaining differences in means and variances). Despite this, two hypotheses exist that explain why trait variability might be expected to differ between the sexes. Interestingly, these two hypotheses make opposing predictions.  
 
-
- this stupid figure has to get embedded    
+## Figure 1
  ![Fig1](./Figures/Figure1.png)
- 
 
+### Overview of meta-analytic methods used to detect differences in means and variances in any given trait (e.g. body size in mice).
+The orange shading represents females (F), turquoise shading stands for males (M). The solid circle represents a mean trait value within the respective group. Solid lines represent standard deviation, with upper and lower bounds indicated by diamond shapes. Below, we present three types of effect sizes that can be used for comparing two groups, along with the respective formulas and interpretations. Compared to lnVR (the ratio of SD), lnCVR (the ratio of CV or relative variance) provides a more general measure of the difference in variability between two groups (mean-adjusted variability ratio).
+ 
+ ## Figure 1—figure supplement 1 
+ this code doesn't make sense here - as it needs all the code that's introduced later
+ ```{r FigCor, fig.height=3, message = FALSE, fig.cap= "Mean-variance relationships (log(Mean) vs log(SD, standard deviation)) across all traits for males (A) and females (B).[Figure 1-figure supplement 1 in manuscript]"}
+# First, clean up the data
+ results <- data %>%
+            group_by(population,
+             production_center,  
+             strain_name,  
+             parameter_name,
+             sex) %>%
+    summarise(trait  = parameter_name[1],
+              x_bar  = mean(data_point, na.rm = TRUE),
+              x_sd   =   sd(data_point, na.rm = TRUE),
+              n_ind  = n()) %>%
+    ungroup() %>%
+    filter(n_ind > 5) %>%   # NOTE here that you are excluding data with 5 exactly....
+    group_by(population) %>%
+    filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
+    multi_spread(sex, c(x_bar, x_sd, n_ind)) %>%
+    mutate(lnMean_m = log(male_x_bar),
+           logSD_m  = log(male_x_sd),
+           lnMean_f = log(female_x_bar),
+           lnSD_f   = log(female_x_sd)) %>%
+    filter(!is.na(logSD_m) & !is.inf(logSD_m)) %>%
+    filter(!is.na(lnSD_f) & !is.inf(lnSD_f))
+                 
+male <- ggplot(results, aes(x = lnMean_m, y = logSD_m)) +
+    geom_point(color = "#66C2A5", size = 2) +
+   geom_smooth(method = "lm", se = FALSE, color="black") + 
+    labs(x = "log (Mean)",
+         y = "log (SD)") + 
+    theme_classic()
+female <- ggplot(results, aes(x = lnMean_f, y = lnSD_f)) +
+    geom_point(color = "#FC8D62", size = 2) +
+  geom_smooth(method = "lm", se = FALSE, color="black")+
+    labs(x = "log (Mean)",
+         y = "log (SD)") + 
+    theme_classic()
+ggarrange(male, female, ncol = 2, nrow = 1, labels = c("A", "B"))
+```
+ ![Fig1sup](./Figures/Figure1sup.png)
+ 
+ ### Mean-variance relationships (log(Mean) vs log(SD, standard deviation)) across all traits for males (A) and females (B).
 
 First, the ‘estrus-mediated variability hypothesis’ (Figure 2), which emerged in the (bio-)medical research field, assumes that the female estrous cycle (see e.g. Prendergast et al., 2014; Beery and Zucker, 2011) causes higher variability across traits in female subjects. A wide range of labile traits are presumed to co-vary with physiological changes that are induced by reproductive hormones. High variability is, therefore, expected to be particularly prominent when the stage of the estrous cycle is unknown and unaccounted for. This higher trait variability, resulting from females being at different stages of their estrous cycle, is the main reason for why female research subjects are often excluded from biomedical research trials, especially in the fields of neuroscience, physiology and pharmacology (NIH, 2015a). Female exclusion has traditionally been justified based on the grounds that including females in empirical research leads to a loss of statistical power, or that animals must be sampled across the estrous cycle for one to make valid conclusions, requiring more time and resources.    
 
+## Figure 2
  ![Fig2](./Figures/Figure2.png)
+ 
+## The two hypotheses (‘greater male variability’ versus ‘estrus-mediated variability’) have different predictions on how variabilities influence total observed phenotypic variance (Vtotal in the figure).
+For greater male variability, the within-subject (or within-trait) variation Vwithin could be potentially negligible or is equal in males and females. This is illustrated as the shaded distributions around each individual mean (dashed vertical lines), which are of equal area for the males (turquoise) and females (orange). The greater value of Vtotal is driven by wider distribution of mean trait values in males compared to females (i.e. Vbetween, represented by a thick horizontal bar). The estrus-mediated variability hypothesis, in contrast, assumes that within-subject [or within-trait] variability is much higher in females than in males (broader orange-shaded trait distributions than turquoise distributions), while the variability of the means between individuals stays the same (thick horizontal bars).
  
 
 Second, the ‘greater male variability hypothesis’ suggests males exhibit higher trait variability because of two different mechanisms. The first mechanism is based on males being the heteroga- metic sex in mammals. Mammalian females possess two X chromosomes, leading to an ‘averaging’ of trait expression across the genes on each chromosome. In contrast, males exhibit greater variance because expression of genes on a single X chromosome is likely to lead to more extreme trait values (Reinhold and Engqvist, 2013). The second mechanism is based on males being under stronger sex- ual selection (Pomiankowski and Moller, 1995; Cuervo and Møller, 1999; Cuervo and Møller,2001). Empirical evidence supports higher variability of traits that are sexually selected, often har- bouring high genetic variance and being condition-dependent, which makes sense as ‘condition’ as a trait is likely to be based on numerous loci (Rowe and Houle, 1996; Tomkins et al., 2004). Thus, higher genetic and, thus, phenotypic variance resulting from sexual selection is expected to charac- terise sexually selected traits. In mammals, it is likely that both mechanisms are operating concomi- tantly. So far, the ‘greater male variability hypothesis’ has gained some support in the evolutionary and psychological literature (Reinhold and Engqvist, 2013; Lehre et al., 2009).
 Here, we conduct the first comprehensive test of the greater male variability and estrus-mediated variability hypotheses in mice (Figure 2; Reinhold and Engqvist, 2013; Johnson et al., 2008;Hedges and Nowell, 1995; Itoh and Arnold, 2015; Becker et al., 2016; Beery, 2018), examining sex differences in variance across 218 traits in 26,916 animals. To this end, we carry out a series of meta-analyses in two steps (Figure 3). First, we quantify the natural logarithm of the male to female coefficients of variation, CV, or relative variance (lnCVR) for each cohort (population) of mice, for dif- ferent traits, along with the variability ratio of male to female standard deviations, SD, on the log scale (lnVR, following Nakagawa et al., 2015, see Figure 1). Then, we analyse these effect sizes to quantify sex bias in variance for each trait using meta-analytic methods. To better understand our results, and match them to previously reported sex differences in trait means (Karp et al., 2017), we also quantify and analyse the log response ratio (lnRR). Next, we statistically amalgamate the trait- level results to test our hypotheses and to quantify the degree of sex bias in and across nine functional trait groups (for details on the grouping, see below). Our meta-analytic approach allows easy interpretation and comparison with earlier and future studies. Further, the proposed method using lnCVR (and lnVR) is probably the only practical method to compare variability between two sexes within and across studies (Nakagawa et al., 2015; Senior et al., 2020), as far as we are aware. Also, the use of a ratio (i.e. lnRR, lnVR, lnCVR) between two groups (males and females) naturally controls for different units (e.g. cm, g, ml) as well as for changes in traits over time and space.
 
+## Figure 3
+ ![Fig3](./Figures/Figure3.png)
+ 
+### Workflow of data processing and meta-analysis.
+
 ## Results
 Data characteristics and workflow
 We used a dataset compiled by the International Mouse Phenotyping Consortium (Dickinson et al., 2016) (IMPC, dataset acquired 6/2018). To gain insight into systematic sex differences, we only included data of wildtype-strain adult mice, between 100 and 500 days of age. We removed cases with missing data, and selected measurements that were closest to 100 days of age (young adult) when multiple measurements of the same trait were available. To obtain robust estimates of sex dif- ferences, we only used data on traits that were measured in at least two different institutions (see workflow diagram, Figure 3).
 
- ![Fig3](./Figures/Figure3.png)
+
  
 Our dataset comprised 218 continuous traits (after initial data cleaning and pre-processing; Figure 3). It contains information from 26,916 mice from nine wildtype strains that were studied across 11 institutions. We combined mouse strain/institution information to create a biological grouping variable (referred to as ‘population’ in Figure 3B; see also Supplementary file 1, Table 1 for details), and the mean and variance of a trait for each population was quantified. We assigned traits according to related procedures into functionally and/or procedurally related trait groups to enhance interpretability (referred to as ‘functional groups’ hereafter; see also Figure 3G). Our nine functional trait groups were: behaviour, morphology, metabolism, physiology, immunology, hematology, heart, hearing and eye (for the rationale of these functional groups and related details, see Methods and Supplementary file 1, Table 3).
 
 ```{r packages1, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, messages=FALSE, paged.print=FALSE}
-library(pacman)
-pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr, pander, splus2R)
-data <- readRDS(here("export", "data_clean.rds")) 
-procedures <- read_csv(here("data", "procedures.csv"))
+library(readr)
+library(dplyr)
+library(devtools)
+library(purrr)
+library(tidyverse)
+library(tidyr)
+library(tibble)
+library(kableExtra)
+library(ggpubr)
+library(ggplot2)
+library(png)
+library(grid)
+library(splus2R)
 
+# missing for meta-analysis: metafor, robumeta
+# pacman::p_load(readr, dplyr,metafor, devtools, purrr, tidyverse, tidyr, tibble, kableExtra, robumeta, ggpubr, ggplot2, png, grid, here, knitr, pander, splus2R)
+```
+Loading data & functions
+```{r}
+data <- readRDS(github://itchyshin/mice_sex_diff/export/data_clean.rds) 
+procedures <- read_csv(github://itchyshin/mice_sex_diff/export/procedures.csv)
 n <- length(unique(data$id))
+
+# loads the raw data, setting some default types for various columns
+load_raw <- function(filename) {
+  read_csv(filename,
+    col_types = cols(
+      .default = col_character(),
+      project_id = col_character(),
+      id = col_character(),
+      parameter_id = col_character(),
+      age_in_days = col_integer(),
+      date_of_experiment = col_datetime(format = ""),
+      weight = col_double(),
+      phenotyping_center_id = col_character(),
+      production_center_id = col_character(),
+      weight_date = col_datetime(format = ""),
+      date_of_birth = col_datetime(format = ""),
+      procedure_id = col_character(),
+      pipeline_id = col_character(),
+      biological_sample_id = col_character(),
+      biological_model_id = col_character(),
+      weight_days_old = col_integer(),
+      datasource_id = col_character(),
+      experiment_id = col_character(),
+      data_point = col_double(),
+      age_in_weeks = col_integer(),
+      `_version_` = col_character()
+    )
+  )
+}
+# Apply some standard cleaning to the data
+clean_raw_data <- function(mydata) {
+  
+  group <- read_csv(here("data", "ParameterGrouping.csv"))
+  
+  tmp <- 
+    mydata %>%
+    # Filter to IMPC source (recommend by Jeremey in email to Susi on 20 Aug 2018)
+    filter(datasource_name == "IMPC") %>%
+
+# standardise trait names
+    mutate(parameter_name = tolower(parameter_name)) %>%
+    # remove extreme ages
+    filter(age_in_days > 0 & age_in_days < 500) %>%
+    # remove NAs
+    filter(!is.na(data_point)) %>%
+    # subset to reasonable set of variables, date_of_experiment used as an indicator of batch-level effects
+    select(production_center, 
+           strain_name, 
+           strain_accession_id, 
+           biological_sample_id, 
+           pipeline_stable_id, 
+           procedure_group, 
+           procedure_name, 
+           sex, 
+           date_of_experiment, 
+           age_in_days, 
+           weight, 
+           parameter_name, 
+           data_point) %>% 
+    # sort
+    arrange(production_center, biological_sample_id, age_in_days)
+      
+    # filter to groups with > 1 centre  
+    merge(tmp, 
+          tmp %>% group_by(parameter_name) %>%
+    summarise(center_per_trait = length(unique(production_center, na.rm = TRUE)))
+        )%>%
+    filter(center_per_trait >= 2) %>% 
+    # Define population variable
+    mutate(population = sprintf("%s-%s", production_center, strain_name)) %>% 
+    # add grouping variable: these were decided based on functional groups and procedures 
+    mutate(parameter_group = group$parameter[match(parameter_name, group$parameter_name)] ) %>%
+    
+    # Assign unique IDs (per trait)
+    # each unique parameter_name (=trait,use trait variable) gets a unique number ('id')
+    # We add a new variable, where redundant traits are combined
+    #[note however, at this stage the dataset still contains nonsensical traits, i.e. traits that may not contain any information on variance]
+    mutate(id = match(parameter_name, unique(parameter_name))) %>% 
+    as_tibble()
+    }
+    
+    data_subset_parameterid_individual_by_age <- function(mydata, parameter, age_min=0, age_center=100) {
+  tmp <- mydata %>%
+    filter(age_in_days >= age_min,
+           id == parameter) %>%
+  # Take results for single individual closest to age_center
+    mutate(age_diff = abs(age_center - age_in_days)) %>%
+    group_by(biological_sample_id) %>%
+    filter(age_diff == min(age_diff)) %>%
+    select(-age_diff)
+    
+  # Still some individuals with multiple records (because same individual appears under different procedures, so filter to one record)
+  j <- match(unique(tmp$biological_sample_id), tmp$biological_sample_id)
+  tmp[j, ] 
+  }
+  
+  # Function re-organises the data so that the male and female data are side-by-side as columns to make effect size calculations easier.
+multi_spread <- function(df, key, value) {
+    # quote key
+      keyq <- rlang::enquo(key)
+    # break value vector into quotes
+    valueq <- rlang::enquo(value)
+         s <- rlang::quos(!!valueq)
+        
+         df                           %>% 
+        gather(variable, value, !!!s) %>%
+        unite(temp, !!keyq, variable) %>%
+        spread(temp, value)
+}
+# Function will calculate population stats and exclude data that is irrelevant and not useful, it will also just convert the data straight away to wide format making it ready for effect size calculations
+calculate_population_stats <- function(mydata, min_individuals = 5){
+    mydata %>% 
+    group_by(population,
+             production_center,  
+             strain_name,  
+             sex) %>%
+    summarise(trait  = parameter_name[1],
+              x_bar  = mean(data_point, na.rm = TRUE),
+              x_sd   =   sd(data_point, na.rm = TRUE),
+              n_ind  = n()) %>%
+    ungroup() %>%
+    filter(n_ind > min_individuals) %>%   
+    group_by(population) %>%
+    filter(all(c("male", "female") %in% sex)) %>% # Removes any entries where only 1 sex is present
+    multi_spread(sex, c(x_bar, x_sd, n_ind))      # Spreads the data out into wide format, so sexes are beside each other which is more typical of meta-analytic data
+}
+
+#This function takes the data and computes lnCVR, lnVR and ROM (lnRR) using male and female data to generate effect size statistics for meta-analyses
+create_meta_analysis_effect_sizes <- function(mydata, measure = c("CVR", "VR", "ROM")){
+  for(i in 1:length(measure)){
+    mydata <- metafor::escalc(m1i  = male_x_bar, 
+                              m2i  = female_x_bar, 
+                              sd1i = male_x_sd, 
+                              sd2i = female_x_sd, 
+                              n1i  = male_n_ind, 
+                              n2i  = female_n_ind, 
+                              data = mydata, 
+                           measure = measure[i], 
+                         var.names = c(paste0("effect_size_", measure[i]), 
+                                      paste0("sample_variance_", measure[i])),
+                            append = TRUE)
+    }
+    return(mydata)
+}
+
+
+```
+
+```{r metaanlysis prep, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, messages=FALSE, paged.print=FALSE}
 # Create dataframe to store results
 results_alltraits_grouping <- 
     data.frame(tibble(id = 1:n, 
@@ -134,7 +353,7 @@ results_alltraits_grouping2 <-
              select(id, parameter_group, procedure = procedure_name, procedure_name, parameter_name) %>%  
              filter(!duplicated(id))) %>%
  
-  # Below we add 'procedure' (from the previously loaded 'procedures.csv') as a variable; n <- length(unique(results_alltraits_grouping2$parameter_name))) should equal 232
+# Below we add 'procedure' (from the previously loaded 'procedures.csv') as a variable; n <- length(unique(results_alltraits_grouping2$parameter_name))) should equal 232
   left_join(by="procedure", 
             procedures %>% distinct())
 # We exclude 14 parameter names for which metafor models didn't converge ("dp t cells", "mzb (cd21/35 high)"), and of parameters that don't harbour enough variation
@@ -194,6 +413,10 @@ model_count <- n_count %>%
      model_lnVR = map(data, ~ robu(.x$lnVR ~ 1,  data = .x, studynum = .x$id, modelweights = c("CORR"), rho = 0.8, small = TRUE, var.eff.size = (.x$lnVR_se)^2)),
     model_lnCVR = map(data, ~ robu(.x$lnCVR ~ 1, data = .x, studynum = .x$id, modelweights = c("CORR"), rho = 0.8, small = TRUE, var.eff.size = (.x$lnCVR_se)^2))
   )
+ ```
+Additional meta-analyses and preparation for plots
+
+ ```{r extracting estimates}
 #### Extracting and save parameter estimates
 # Here we apply an additional function to collect the outcomes of the 'mini-meta-analysis' that has condensed our non-independent traits. Values from our second-order meta-analysis using robu-meta are then extracted
 count_fun <- function(mod_sub) {
@@ -226,6 +449,7 @@ robusub_VR <- model_count %>%
               select(-estimatelnVR) %>%
               purrr::set_names(c("parameter_group", "lnVR", "lnVR_lower", "lnVR_upper", "lnVR_se"))
 robu_all <- full_join(robusub_CVR, robusub_VR) %>% full_join(., robusub_RR)
+
 #### Combining data 
 # Merge the two data sets (the new [robu_all] and the initial [uncorrelated sub-traits with count = 1]) 
 meta_all <- meta1 %>%
@@ -508,12 +732,409 @@ Metameta_Fig3_alltraits <- overall4 %>%
 
 ```
 
-blah blah 
+## Figure 4
 
-```{r Fig3, fig.cap = "Panel A shows the numbers of traits across functional groups that are either male-biased (blue-green) or female-biased (orange-red), as calculated in Figure 1.1D. Panel B shows effect sizes and 95% CI from separate meta-analysis for each functional group (step H in Figure1.1). Both panels represent results evaluated across all traits. Traits that are male biased are shown in blue, whereas female bias data is represented in orange.[Figure 4 in manuscript]"}
+```{r  fig.cap = "Sex bias in trait groups.
+Panel (A) shows the numbers of traits that are either male-biased (turquoise) or female-biased (orange) across functional groups. The x-axes in Panel A represents the overall percentages of traits with a given direction of sex bias: orange shading when meta-analytic mean < 0 (female-biased), turquoise shading when meta-analytic mean > 0 (male-biased). White numbers inside the turquoise bars represent numbers of traits that show male bias within a given group of traits, numbers inside the orange bars represent the number of female-biased traits. Panel (B) shows effect sizes and 95% CI from separate meta-analysis for each functional group (Figure 3H). Traits that are male-biased in Panel B are shifted towards the righthand side of the zero-midline (near the turquoise male symbol), whereas female-biased traits are shifted towards the left (near the orange female symbol)."}
+
 Fig4 <- ggarrange(malebias_Fig2_alltraits, Metameta_Fig3_alltraits,  nrow = 2, align = "v", heights = c(10, 9), labels = c("A", "B"))
 Fig4
 ```
+## Figure 4—figure supplement 1
+```{r code for heterogeneity}
+### Preparing heterogeneity
+# Create dataframe to store results
+results.allhetero.grouping <- as.data.frame(cbind(c(1:n), matrix(rep(0, n * 30), ncol = 30)))
+names(results.allhetero.grouping) <- c(
+  "id", "sigma2_strain.CVR", "sigma2_center.CVR", "sigma2_error.CVR", "s.nlevels.strain.CVR",
+  "s.nlevels.center.CVR", "s.nlevels.error.CVR", "sigma2_strain.VR", "sigma2_center.VR", "sigma2_error.VR", "s.nlevels.strain.VR",
+  "s.nlevels.center.VR", "s.nlevels.error.VR", "sigma2_strain.RR", "sigma2_center.RR", "sigma2_error.RR", "s.nlevels.strain.RR",
+  "s.nlevels.center.RR", "s.nlevels.error.RR", "lnCVR", "lnCVR_lower", "lnCVR_upper", "lnCVR_se", "lnVR", "lnVR_lower", "lnVR_upper",
+  "lnVR_se", "lnRR", "lnRR_lower", "lnRR_upper", "lnRR_se"
+)
+ 
+#Loop
+for (t in 1:n) {
+  tryCatch(
+    {
+      results <- data %>% 
+                  data_subset_parameterid_individual_by_age(t) %>% 
+                  calculate_population_stats() %>% 
+                  create_meta_analysis_effect_sizes() %>%
+                  mutate(err = seq_len(n()))
+                  
+      # lnCVR, logaritm of the ratio of male and female coefficients of variance
+      cvr. <- metafor::rma.mv(yi = effect_size_CVR, 
+                              V = sample_variance_CVR, 
+                              random = list(~ 1 | strain_name, ~ 1 | production_center,~ 1 | err), 
+                              control = list(optimizer = "optim", 
+                                             optmethod = "Nelder-Mead", 
+                                             maxit = 1000), 
+                              data = results)
+      
+      results.allhetero.grouping[t, 2] <- cvr.$sigma2[1]
+      results.allhetero.grouping[t, 3] <- cvr.$sigma2[2]
+      results.allhetero.grouping[t, 4] <- cvr.$sigma2[3]
+      results.allhetero.grouping[t, 5] <- cvr.$s.nlevels[1]
+      results.allhetero.grouping[t, 6] <- cvr.$s.nlevels[2]
+      results.allhetero.grouping[t, 7] <- cvr.$s.nlevels[3]
+      results.allhetero.grouping[t, 20] <- cvr.$b
+      results.allhetero.grouping[t, 21] <- cvr.$ci.lb
+      results.allhetero.grouping[t, 22] <- cvr.$ci.ub
+      results.allhetero.grouping[t, 23] <- cvr.$se
+      
+       # lnVR, male to female variability ratio (logarithm of male and female standard deviations)
+      vr. <- metafor::rma.mv(yi = effect_size_VR, 
+                             V = sample_variance_VR, 
+                             random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
+                             control = list(optimizer = "optim", 
+                                            optmethod = "Nelder-Mead", 
+                                            maxit = 1000), 
+                             data = results)
+      
+      results.allhetero.grouping[t, 8] <- vr.$sigma2[1]
+      results.allhetero.grouping[t, 9] <- vr.$sigma2[2]
+      results.allhetero.grouping[t, 10] <- vr.$sigma2[3]
+      results.allhetero.grouping[t, 11] <- vr.$s.nlevels[1]
+      results.allhetero.grouping[t, 12] <- vr.$s.nlevels[2]
+      results.allhetero.grouping[t, 13] <- vr.$s.nlevels[3]
+      results.allhetero.grouping[t, 24] <- vr.$b
+      results.allhetero.grouping[t, 25] <- vr.$ci.lb
+      results.allhetero.grouping[t, 26] <- vr.$ci.ub
+      results.allhetero.grouping[t, 27] <- vr.$se
+      # lnRR, response ratio (logarithm of male and female means)
+      rr. <- metafor::rma.mv(yi = effect_size_ROM, 
+                             V = sample_variance_ROM, 
+                             random = list(~ 1 | strain_name, ~ 1 | production_center, ~ 1 | err), 
+                             control = list(optimizer = "optim", 
+                                            optmethod = "Nelder-Mead", 
+                                            maxit = 1000), 
+                             data = results)
+      
+      results.allhetero.grouping[t, 14] <- rr.$sigma2[1]
+      results.allhetero.grouping[t, 15] <- rr.$sigma2[2]
+      results.allhetero.grouping[t, 16] <- rr.$sigma2[3]
+      results.allhetero.grouping[t, 17] <- rr.$s.nlevels[1]
+      results.allhetero.grouping[t, 18] <- rr.$s.nlevels[2]
+      results.allhetero.grouping[t, 19] <- rr.$s.nlevels[3]
+      results.allhetero.grouping[t, 28] <- rr.$b
+      results.allhetero.grouping[t, 29] <- rr.$ci.lb
+      results.allhetero.grouping[t, 30] <- rr.$ci.ub
+      results.allhetero.grouping[t, 31] <- rr.$se
+    },
+    error = function(e) {
+      cat("ERROR :", conditionMessage(e), "\n")
+    }
+     )
+}
+
+              results.allhetero.grouping2 <- results.allhetero.grouping[results.allhetero.grouping$s.nlevels.strain.VR != 0, ]
+# nrow(results.allhetero.grouping) #232  
+# Merging dataset with correct procedure names
+# procedures <- read.csv(here("export", "procedures.csv"))
+results.allhetero.grouping2$parameter_group <- data$parameter_group[match(results.allhetero.grouping2$id, data$id)]
+      results.allhetero.grouping2$procedure <- data$procedure_name[match(results.allhetero.grouping2$id, data$id)]
+   results.allhetero.grouping2$GroupingTerm <- procedures$GroupingTerm[match(results.allhetero.grouping2$procedure, procedures$procedure)]
+ results.allhetero.grouping2$parameter_name <- data$parameter_name[match(results.allhetero.grouping2$id, data$id)]
+#We deal with correlated parameters following the procedures described above (extraction of effects sizes).
+metahetero1 <- results.allhetero.grouping2
+# length(unique(metahetero1$procedure)) #19
+# length(unique(metahetero1$GroupingTerm)) #9 
+# length(unique(metahetero1$parameter_group)) #152
+# length(unique(metahetero1$parameter_name)) #223
+# Count of number of parameter names (correlated sub-traits) in each parameter group (par_group_size)
+metahetero1b <- metahetero1                    %>%
+                group_by(parameter_group)      %>%
+                mutate(par_group_size = n_distinct(parameter_name))
+metahetero1$par_group_size <- metahetero1b$par_group_size[match(metahetero1$parameter_group, metahetero1b$parameter_group)]
+# Create subsets with > 1 count (par_group_size > 1)
+metahetero1_sub <- subset(metahetero1, par_group_size > 1) # 92 observations
+# Nest data
+n_count. <- metahetero1_sub %>%
+  group_by(parameter_group) %>%
+  nest()
+
+# meta-analysis preparation
+model_count. <- n_count. %>%
+  mutate(
+    model_lnRR = map(data, ~ robu(.x$lnRR ~ 1,
+      data = .x, studynum = .x$id, modelweights = c("CORR"), rho = 0.8,
+      small = TRUE, var.eff.size = (.x$lnRR_se)^2
+    )),
+    model_lnVR = map(data, ~ robu(.x$lnVR ~ 1,
+      data = .x, studynum = .x$id, modelweights = c("CORR"), rho = 0.8,
+      small = TRUE, var.eff.size = (.x$lnVR_se)^2
+    )),
+    model_lnCVR = map(data, ~ robu(.x$lnCVR ~ 1,
+      data = .x, studynum = .x$id, modelweights = c("CORR"), rho = 0.8,
+      small = TRUE, var.eff.size = (.x$lnCVR_se)^2
+    ))
+  )
+# Robumeta object details:  str(model_count.$model_lnCVR[[1]])
+# Perform meta-analyses on correlated sub-traits, using robumeta
+# Extract and save parameter estimates
+count_fun. <- function(mod_sub) {
+  return(c(as.numeric(mod_sub$mod_info$term1), mod_sub$N))
+}
+robusub_RR. <- model_count. %>%
+  transmute(estimatelnRR = map(model_lnRR, count_fun.)) %>%    
+  mutate(r = map(estimatelnRR, ~ data.frame(t(.)))) %>%
+  unnest(r) %>%
+  select(-estimatelnRR) %>%
+  purrr::set_names(c("parameter_group", "var.RR", "N.RR"))
+robusub_CVR. <- model_count. %>%
+  transmute(estimatelnCVR = map(model_lnCVR, count_fun.)) %>%
+  mutate(r = map(estimatelnCVR, ~ data.frame(t(.)))) %>%
+  unnest(r) %>%
+  select(-estimatelnCVR) %>%
+  purrr::set_names(c("parameter_group", "var.CVR", "N.CVR"))
+robusub_VR. <- model_count. %>%
+  transmute(estimatelnVR = map(model_lnVR, count_fun.)) %>%
+  mutate(r = map(estimatelnVR, ~ data.frame(t(.)))) %>%
+  unnest(r) %>%
+   select(-estimatelnVR) %>%
+  purrr::set_names(c("parameter_group", "var.VR", "N.VR"))
+robu_all. <- full_join(robusub_CVR., robusub_VR.) %>% full_join(., robusub_RR.)
+#Merge the two data sets (the new [robu_all.] and the initial [uncorrelated sub-traits with count = 1])
+#In this step, we 	1) merge the N from robumeta and the  N from metafor (s.nlevels.error) together into the same columns (N.RR, N.VR, N.CVR)
+# 2) calculate the total variance for metafor models as the sum of random effect variances and the residual error, then add in the same columns together with the residual variances from robumeta 
+  
+  
+metahetero_all <- metahetero1 %>%
+  filter(par_group_size == 1) %>%
+  as_tibble()
+metahetero_all$N.RR <- metahetero_all$s.nlevels.error.RR
+metahetero_all$N.CVR <- metahetero_all$s.nlevels.error.CVR
+metahetero_all$N.VR <- metahetero_all$s.nlevels.error.VR
+metahetero_all$var.RR <- log(sqrt(metahetero_all$sigma2_strain.RR + metahetero_all$sigma2_center.RR + metahetero_all$sigma2_error.RR))
+metahetero_all$var.VR <- log(sqrt(metahetero_all$sigma2_strain.VR + metahetero_all$sigma2_center.VR + metahetero_all$sigma2_error.VR))
+metahetero_all$var.CVR <- log(sqrt(metahetero_all$sigma2_strain.CVR + metahetero_all$sigma2_center.CVR + metahetero_all$sigma2_error.CVR))
+# str(metahetero_all)
+# str(robu_all.)
+
+metahetero_all <- metahetero_all %>% mutate(
+  var.RR = if_else(var.RR == -Inf, -7, var.RR),   # numbers chosen as limits; based on the values in the dataset
+  var.VR = if_else(var.VR == -Inf, -5, var.VR),
+  var.CVR = if_else(var.CVR == -Inf, -6, var.CVR)
+)
+# Combine data
+# Step1
+combinedmetahetero <- bind_rows(robu_all., metahetero_all)
+# glimpse(combinedmetahetero)
+# Steps 2&3
+              metacombohetero <- combinedmetahetero
+       metacombohetero$counts <- metahetero1$par_group_size[match(metacombohetero$parameter_group, metahetero1$parameter_group)]
+   metacombohetero$procedure2 <- metahetero1$procedure[match(metacombohetero$parameter_group, metahetero1$parameter_group)]
+metacombohetero$GroupingTerm2 <- metahetero1$GroupingTerm[match(metacombohetero$parameter_group, metahetero1$parameter_group)]
+# **Clean-up and rename
+metacombohetero <- metacombohetero %>% select(parameter_group, var.CVR, N.CVR, var.VR, N.VR, var.RR, N.RR, counts, procedure = procedure2, GroupingTerm = GroupingTerm2)  
+# Invidual table for heterogeneity across all traits
+ kable(metacombohetero,, digits = 3) %>%
+  kable_styling() %>%
+  scroll_box(width = "100%", height = "200px")
+#### Meta-analysis of heterogeneity
+## Perform meta-meta-analysis (3 for each of the 9 grouping terms: var.CVR, var.VR, var.RR)
+metacombohetero_final <- metacombohetero %>%
+  group_by(GroupingTerm) %>%
+  nest()
+# Final random effects meta-analyses within grouping terms, with SE of the estimate
+heterog1 <- metacombohetero_final %>%
+  mutate(
+    model_heteroCVR = map(data, ~ metafor::rma.uni(
+      yi = .x$var.CVR, sei = sqrt(1 / 2 * (.x$N.CVR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead",
+		                          maxit = 10000, 
+                     stepadj = 0.5), verbose = F)),
+    model_heteroVR = map(data, ~ metafor::rma.uni(
+      yi = .x$var.VR, sei = sqrt(1 / 2 * (.x$N.VR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead", 
+                     maxit = 10000, 
+                     stepadj = 0.5), verbose = F)),
+    model_heteroRR = map(data, ~ metafor::rma.uni(
+      yi = .x$var.RR, sei = sqrt(1 / 2 * (.x$N.RR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead", 
+                     maxit = 10000, 
+                     stepadj = 0.5), verbose = F)) )
+# Across all grouping terms   
+metacombohetero_all_final <- metacombohetero %>%
+  nest(data = everything()) 
+# Final random effects meta-analyses ACROSS grouping terms, with SE of the estimate
+heterog1_all <- metacombohetero_all_final %>%
+  
+  mutate( model_heteroCVR = map(data, ~ metafor::rma.uni(
+      yi = .x$var.CVR, sei = sqrt(1 / 2 * (.x$N.CVR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead", 
+                     maxit = 10000, 
+                     stepadj = 0.5), verbose = F)),
+    model_heteroVR = map(data, ~ metafor::rma.uni(yi = .x$var.VR, sei = sqrt(1 / 2 * (.x$N.VR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead", 
+                     maxit = 10000, 
+                     stepadj = 0.5), verbose = F)),
+    model_heteroRR = map(data, ~ metafor::rma.uni(yi = .x$var.RR, sei = sqrt(1 / 2 * (.x$N.RR - 1)),
+      control = list(optimizer = "optim", 
+                     optmethod = "Nelder-Mead", 
+                     maxit = 10000, 
+                     stepadj = 0.5), verbose = F)))
+
+# Re-structure data for each grouping term; extract heterogenenity/variance terms; delete un-used variables
+extract_heterogeneity <- function(data, type){
+  
+  tmp <- data %>%
+         filter(., GroupingTerm == type) %>%
+         select(., -data) %>%
+         mutate(heteroCVR       = .[[2]][[1]]$b, 
+                heteroCVR_lower = .[[2]][[1]]$ci.lb, 
+                heteroCVR_upper = .[[2]][[1]]$ci.ub, 
+                heteroCVR_se    = .[[2]][[1]]$se,
+                heteroVR        = .[[3]][[1]]$b, 
+                heteroVR_lower  = .[[3]][[1]]$ci.lb, 
+                heteroVR_upper  = .[[3]][[1]]$ci.ub, 
+                heteroVR_se     = .[[3]][[1]]$se,
+                heteroRR        = .[[4]][[1]]$b, 
+                heteroRR_lower  = .[[4]][[1]]$ci.lb, 
+                heteroRR_upper  = .[[4]][[1]]$ci.ub, 
+                heteroRR_se     = .[[4]][[1]]$se) %>%
+        select(., GroupingTerm, heteroCVR:heteroRR_se)
+  
+  return(tmp)
+}
+   Behaviour. <- extract_heterogeneity(heterog1, type = "Behaviour")
+  Immunology. <- extract_heterogeneity(heterog1, type = "Immunology")
+  Hematology. <- extract_heterogeneity(heterog1, type = "Hematology")
+     Hearing. <- extract_heterogeneity(heterog1, type = "Hearing")
+  Physiology. <- extract_heterogeneity(heterog1, type = "Physiology")
+  Metabolism. <- extract_heterogeneity(heterog1, type = "Metabolism")
+  Morphology. <- extract_heterogeneity(heterog1, type = "Morphology")
+       Heart. <- extract_heterogeneity(heterog1, type = "Heart")
+         Eye. <- extract_heterogeneity(heterog1, type = "Eye")
+#Reorder to be able to keep cell referencing 
+heterog1_all <- heterog1_all %>% 
+                mutate(GroupingTerm = "All") %>% 
+                select(GroupingTerm, everything())
+		
+		All. <- heterog1_all %>% 
+        select(., -data) %>%
+        mutate(heteroCVR       = .[[2]][[1]]$b, 
+               heteroCVR_lower = .[[2]][[1]]$ci.lb, 
+               heteroCVR_upper = .[[2]][[1]]$ci.ub, 
+               heteroCVR_se    = .[[2]][[1]]$se, 
+               heteroVR        = .[[3]][[1]]$b, 
+               heteroVR_lower  = .[[3]][[1]]$ci.lb, 
+               heteroVR_upper  = .[[3]][[1]]$ci.ub, 
+               heteroVR_se     = .[[3]][[1]]$se, 
+               heteroRR        = .[[4]][[1]]$b, 
+               heteroRR_lower  = .[[4]][[1]]$ci.lb, 
+               heteroRR_upper  = .[[4]][[1]]$ci.ub, 
+               heteroRR_se     = .[[4]][[1]]$se) %>%
+        select(., GroupingTerm, heteroCVR:heteroRR_se)
+	
+heterog2 <- bind_rows(Behaviour., Morphology., Metabolism., Physiology., Immunology., Hematology., Heart., Hearing., Eye., All.)
+
+#### Preparation of the Heterogeneity PLOT
+#Restructure data for plotting
+heterog3 <- gather(heterog2, parameter, value, c(heteroCVR, heteroVR, heteroRR), factor_key = TRUE)
+heteroCVR.ci <- heterog3 %>%
+                filter(parameter == "heteroCVR") %>%
+                mutate(ci.low = heteroCVR_lower, 
+                       ci.high = heteroCVR_upper)
+heteroVR.ci <-  heterog3 %>%
+                filter(parameter == "heteroVR") %>%
+                mutate(ci.low = heteroVR_lower, 
+                       ci.high = heteroVR_upper)
+heteroRR.ci <-  heterog3 %>%
+                filter(parameter == "heteroRR") %>%
+                mutate(ci.low = heteroRR_lower, 
+                       ci.high = heteroRR_upper)
+heterog4 <- bind_rows(heteroCVR.ci, heteroVR.ci, heteroRR.ci) %>% select(GroupingTerm, parameter, value, ci.low, ci.high)
+# **Re-order grouping terms
+heterog4$GroupingTerm <- factor(heterog4$GroupingTerm, 
+                                levels = c("Behaviour", "Morphology", "Metabolism", 
+                                           "Physiology", "Immunology", "Hematology", "Heart", 
+                                           "Hearing", "Eye", "All"))
+heterog4$GroupingTerm <- factor(heterog4$GroupingTerm, 
+                                rev(levels(heterog4$GroupingTerm)))
+heterog4$label <- "All traits"
+# write.csv(heterog4, "heterog4.csv")
+#### Plot S1 C (Second-order meta analysis on heterogeneity)
+heterog5 <- heterog4
+heterog5$mean <- as.numeric(exp(heterog5$value))
+heterog5$ci.l <- as.numeric(exp(heterog5$ci.low))
+heterog5$ci.h <- as.numeric(exp(heterog5$ci.high))
+heterog6 <- heterog5
+HeteroS1 <-
+  heterog6 %>%
+  ggplot(aes(y = GroupingTerm, x = mean)) +
+  geom_errorbarh(aes(
+    xmin = ci.l,
+    xmax = ci.h
+  ),
+  height = 0.1, show.legend = FALSE
+  ) +
+  geom_point(aes(shape = parameter),
+    fill = "black",
+    color = "black", size = 2.2,
+    show.legend = FALSE
+  ) +
+  scale_x_continuous(
+    limits = c(-0.1, 1.4),
+    # breaks = c(0, 0.1, 0.2),
+    name = "sigma^2"
+  ) +
+  # geom_vline(xintercept=0,
+  # color='black',
+  # linetype='dashed')+
+  facet_grid(
+    cols = vars(parameter), rows = vars(label),
+        labeller = label_wrap_gen(width = 23),
+    scales = "free",
+    space = "free"
+  ) +
+  theme_bw() +
+  theme(
+    strip.text.y = element_text(angle = 270, size = 10, margin = margin(t = 15, r = 15, b = 15, l = 15)),
+    strip.text.x = element_text(size = 12),
+    strip.background = element_rect(colour = NULL, linetype = "blank", fill = "gray90"),
+    text = element_text(size = 14),
+    panel.spacing = unit(0.5, "lines"),
+    panel.border = element_blank(),
+    axis.line = element_line(),
+    panel.grid.major.x = element_line(linetype = "solid", colour = "gray95"),
+    panel.grid.major.y = element_line(linetype = "solid", color = "gray95"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    axis.title.x = element_text(hjust = 0.5, size = 14),
+    axis.title.y = element_blank())
+```
+
+```{r fig.cap = "Percentages and numbers of either male (turqoise bars) or female (orange bars) biased traits (Panel A) across functional groups, this time for lnCVR (left hand side), lnVR (middle) and lnRR (right hand side).
+Panel B shows effect sizes from separate meta-analysis for each functional group, and Panel C contains results of heterogeneity analyses. All three panels represent results evaluated across all traits."}
+
+
+```
+
+#HERE
+ add code for supplemental figs
+
+
+## Figure 4—figure supplement 2
+```{r code for sex bias}
+
+```
+
+```{r fig.cap = "**Sex bias in trait groups for lnCVR, lnVR and lnRR.**
+(A) Percentages and numbers of affected traits, for variance (lnCVR and lnVR) and means (lnRR), where there is a significant difference between the sexes (i.e. CI not overlapping zero), and where the sex bias is greater than 10% difference (regardless of significance). Panel B depicts results for the effect size magnitudes in those traits that differ between the sexes (second-order meta-analysis). Triangles represent sex bias in means (response ratio) and black circles differences in the coefficient of variation ratio (mean-adjusted variability). The orange bars represent trait groups with a female bias, turqouise bars male-biased traits."}
+
+
+```
+
+
+
 
 ### Testing the two hypotheses
 We found that some means and variabilities of traits were biased towards males (i.e. ‘male-biased’, hereafter; turquoise shaded traits, Figure 4), but others towards females (i.e. ‘female-biased’, here- after; orange shading, Figure 4) within all functional groups. These sex-specific biases occur in mean trait sizes and also in our measures of trait variability. There were strong positive relationships between mean and variance across traits (r > 0.94 on the log scale; Figure 1—figure supplement 1), and therefore, we report the results of lnCVR, which controls for differences in means, in the main text. Results on lnVR are presented as figure supplements (Figure 4—figure supplements 1 and 2).
