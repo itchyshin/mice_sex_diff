@@ -88,7 +88,7 @@ library(robumeta)
 ```
 Loading data & functions
 ```{r}
-data <- readRDS(data_clean.rds) 
+data <- readRDS(github://itchyshin/mice_sex_diff/export/data_clean.rds) 
 procedures <- read_csv(github://itchyshin/mice_sex_diff/export/procedures.csv)
 n <- length(unique(data$id))
 
